@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, PaymentStatus } from '../types';
 import { markOrderDelivered } from '../services/storageService';
@@ -33,7 +34,8 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
       result = result.filter(o => 
         o.id.toLowerCase().includes(q) ||
         o.customerName.toLowerCase().includes(q) ||
-        o.phone.includes(q)
+        o.phone.includes(q) ||
+        o.address.toLowerCase().includes(q) // Added address search
       );
     }
 
@@ -123,7 +125,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
               <input 
                 type="text"
                 className="w-full pl-12 p-3 rounded-lg text-slate-900 font-lg outline-none ring-2 ring-transparent focus:ring-orange-300 transition-all"
-                placeholder="Buscar por Nombre, Teléfono o N°..."
+                placeholder="Buscar por Dirección, Nombre, Tel o N°..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -214,6 +216,9 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                                     (Seña: ${order.deposit})
                                 </span>
                             )}
+                        </div>
+                        <div className="text-xs text-slate-500 italic truncate max-w-[50%]">
+                            {order.address}
                         </div>
                     </div>
                     {order.notes && (
