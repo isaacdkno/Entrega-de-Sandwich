@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { Order } from "../types";
+import { Order, PaymentStatus } from "../types";
 
 export const generateTicketPDF = (order: Order) => {
   // Configuración para impresora térmica (80mm ancho)
@@ -69,6 +69,15 @@ export const generateTicketPDF = (order: Order) => {
   y += 8;
 
   doc.line(margin, y, margin + width, y);
+  y += 6;
+
+  // --- ESTADO DE PAGO ---
+  doc.setFontSize(12);
+  let paymentText = "FALTA ABONAR";
+  if (order.paymentStatus === PaymentStatus.PAID) paymentText = "TOTALMENTE PAGADO";
+  if (order.paymentStatus === PaymentStatus.PARTIAL) paymentText = "CON SEÑA";
+  
+  doc.text(`ESTADO: ${paymentText}`, margin, y);
   y += 6;
 
   // --- NOTAS ---

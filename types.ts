@@ -17,6 +17,12 @@ export enum OrderStatus {
   DELIVERED = 'Entregado', // Delivered to customer
 }
 
+export enum PaymentStatus {
+  PAID = 'Pagado',
+  PARTIAL = 'Con Seña',
+  UNPAID = 'Falta Abonar'
+}
+
 export enum UserRole {
   ADMIN = 'Administrador',
   CARGADOR = 'Cargador',
@@ -42,10 +48,12 @@ export interface Order {
   qtySimples: number;
   notes: string;
   deposit: number; // Seña
+  paymentStatus: PaymentStatus;
   
   // Process fields
   originBranch: ProductionBranch; // Where it was loaded
   location: string | null; // e.g., H3a. Null implies not elaborated yet.
+  packageCount: number; // Number of packages/bags
   status: OrderStatus;
   deliveredAt: string | null; // ISO Date string
   createdBy: string; // Email of user

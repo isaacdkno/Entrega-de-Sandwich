@@ -35,7 +35,12 @@ const App: React.FC = () => {
   }, []);
 
   // Check Permissions Helper
-  const canAccessTab = (role: UserRole, tabId: string) => {
+  const canAccessTab = (role: UserRole, tabId: string, email: string) => {
+     // Special Rule for Users Tab
+     if (tabId === 'usuarios') {
+         return email.toLowerCase() === 'isaacgomez78@gmail.com';
+     }
+
      if (role === UserRole.ADMIN) return true;
      if (role === UserRole.CARGADOR && tabId === 'carga') return true;
      if (role === UserRole.UBICADOR && tabId === 'ubicar') return true;
@@ -132,35 +137,40 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} userRole={session.role} />
+      <Tabs 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        userRole={session.role} 
+        userEmail={session.email}
+      />
 
       <main className="mt-4 animate-fade-in">
-        {activeTab === 'carga' && canAccessTab(session.role, 'carga') && (
+        {activeTab === 'carga' && canAccessTab(session.role, 'carga', session.email) && (
           <LoadTab 
             session={session} 
             onSessionUpdate={setSession} 
             refreshData={refreshOrders}
           />
         )}
-        {activeTab === 'ubicar' && canAccessTab(session.role, 'ubicar') && (
+        {activeTab === 'ubicar' && canAccessTab(session.role, 'ubicar', session.email) && (
           <LocateTab orders={orders} refreshData={refreshOrders} />
         )}
-        {activeTab === 'entregar' && canAccessTab(session.role, 'entregar') && (
+        {activeTab === 'entregar' && canAccessTab(session.role, 'entregar', session.email) && (
           <DeliverTab orders={orders} refreshData={refreshOrders} />
         )}
-        {activeTab === 'estadisticas' && canAccessTab(session.role, 'estadisticas') && (
+        {activeTab === 'estadisticas' && canAccessTab(session.role, 'estadisticas', session.email) && (
           <StatsTab orders={orders} />
         )}
-        {activeTab === 'usuarios' && canAccessTab(session.role, 'usuarios') && (
+        {activeTab === 'usuarios' && canAccessTab(session.role, 'usuarios', session.email) && (
           <UserManagementTab currentUserSession={session} />
         )}
 
         {/* Access Denied State */}
-        {!canAccessTab(session.role, activeTab) && (
+        {!canAccessTab(session.role, activeTab, session.email) && (
             <div className="flex flex-col items-center justify-center pt-20 text-slate-400">
                 <Lock size={48} className="mb-4" />
                 <h2 className="text-xl font-bold">Acceso Restringido</h2>
-                <p>Su rol de {session.role} no tiene permiso para ver esta sección.</p>
+                <p>Su cuenta no tiene permiso para ver esta sección.</p>
             </div>
         )}
       </main>

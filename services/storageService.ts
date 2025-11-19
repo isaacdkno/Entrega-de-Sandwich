@@ -1,4 +1,4 @@
-import { Order, OrderStatus, UserSession, UserRole, AppUser } from '../types';
+import { Order, OrderStatus, UserSession, UserRole, AppUser, PaymentStatus } from '../types';
 import { STORAGE_KEY_SESSION } from '../constants';
 import { supabase, isSupabaseConfigured } from './client';
 
@@ -103,8 +103,10 @@ const mapFromDb = (row: any): Order => ({
     qtySimples: row.qty_simples,
     notes: row.notes || '',
     deposit: Number(row.deposit),
+    paymentStatus: row.payment_status || PaymentStatus.UNPAID,
     originBranch: row.origin_branch,
     location: row.location,
+    packageCount: row.package_count || 0,
     status: row.status as OrderStatus,
     deliveredAt: row.delivered_at,
     createdBy: row.created_by
@@ -123,8 +125,10 @@ const mapToDb = (order: Order) => ({
     qty_simples: order.qtySimples,
     notes: order.notes,
     deposit: order.deposit,
+    payment_status: order.paymentStatus,
     origin_branch: order.originBranch,
     location: order.location,
+    package_count: order.packageCount,
     status: order.status,
     delivered_at: order.deliveredAt,
     created_by: order.createdBy
@@ -184,28 +188,41 @@ export const searchOrders = async (term: string): Promise<Order[]> => {
   return (data || []).map(mapFromDb);
 };
 
-export const saveOrder = async (order: Order): Promise<void> => {
+// Modified to accept an isUpdate flag to prevent accidental overwrites
+export const saveOrder = async (order: Order, isUpdate: boolean = false): Promise<void> => {
   if (!isSupabaseConfigured()) throw new Error("Base de datos no conectada");
+
+  // 1. Protection: If creating a new order (not editing), check if ID exists first
+  if (!isUpdate) {
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('id', order.id)
+      .single();
+      
+    if (existing) {
+      throw new Error(`La comanda número #${order.id} YA EXISTE. No se puede sobrescribir. Use la opción de Buscar/Editar.`);
+    }
+  }
 
   const dbData = mapToDb(order);
 
-  // Using upsert to handle both create and update if ID exists
+  // 2. Save
   const { error } = await supabase
     .from('orders')
     .upsert(dbData);
 
   if (error) {
-    // Graceful degradation: If pickup_time column is missing (Code 42703), retry without it
-    if (error.code === '42703') {
-        console.warn("Schema mismatch: 'pickup_time' column missing. Retrying save without it...");
-        const { pickup_time, ...legacyData } = dbData;
-        const { error: retryError } = await supabase.from('orders').upsert(legacyData);
-        
-        if (retryError) {
-            console.error('Error saving order (retry):', retryError);
-            throw new Error(retryError.message);
+    // Graceful degradation checks...
+    const missingCols = ['pickup_time', 'payment_status', 'package_count'];
+    for (const col of missingCols) {
+        if (error.code === '42703' || (error.message && error.message.includes(col))) {
+            console.warn(`Schema mismatch: '${col}' column missing. Retrying save without it...`);
+            delete (dbData as any)[col];
+            const { error: retryError } = await supabase.from('orders').upsert(dbData);
+            if (retryError) throw new Error(retryError.message);
+            return;
         }
-        return;
     }
 
     console.error('Error saving order:', error);
@@ -213,18 +230,32 @@ export const saveOrder = async (order: Order): Promise<void> => {
   }
 };
 
-export const updateOrderLocation = async (id: string, location: string): Promise<void> => {
+export const updateOrderLocation = async (id: string, location: string, packageCount: number): Promise<void> => {
   if (!isSupabaseConfigured()) return;
 
   const { error } = await supabase
     .from('orders')
     .update({ 
         location: location, 
+        package_count: packageCount,
         status: OrderStatus.READY_FOR_PICKUP 
     })
     .eq('id', id);
 
-  if (error) console.error('Error updating location:', error);
+  if (error) {
+      // Backward compatibility if column doesn't exist yet
+      if (error.message && error.message.includes('package_count')) {
+          await supabase
+            .from('orders')
+            .update({ 
+                location: location, 
+                status: OrderStatus.READY_FOR_PICKUP 
+            })
+            .eq('id', id);
+      } else {
+          console.error('Error updating location:', error);
+      }
+  }
 };
 
 export const markOrderDelivered = async (id: string): Promise<void> => {
@@ -245,4 +276,11 @@ export const deleteOrder = async (id: string): Promise<void> => {
     if (!isSupabaseConfigured()) return;
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) console.error('Error deleting order:', error);
+};
+
+export const deleteAllOrders = async (): Promise<void> => {
+    if (!isSupabaseConfigured()) return;
+    // Delete all rows from orders table
+    const { error } = await supabase.from('orders').delete().neq('id', '0'); // Hack to delete all where ID is not 0 (basically all)
+    if (error) throw error;
 };

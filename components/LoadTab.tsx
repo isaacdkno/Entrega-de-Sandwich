@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole } from '../types';
-import { PICKUP_BRANCHES, PICKUP_DATES, PRODUCTION_BRANCHES } from '../constants';
+import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
+import { PICKUP_BRANCHES, PICKUP_DATES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, deleteOrder, searchOrders } from '../services/storageService';
 import { Save, Settings, Loader2, Search, Trash2, XCircle, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -26,6 +26,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     qtyTriples: 0,
     qtySimples: 0,
     deposit: 0,
+    paymentStatus: PaymentStatus.UNPAID,
     pickupBranch: PickupBranch.CENTRAL,
   });
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -34,6 +35,13 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     const newSession = { ...session, currentProductionBranch: branch };
     onSessionUpdate(newSession);
     setIsSettingsOpen(false);
+  };
+
+  // Prevent Enter key from submitting the form accidentally
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
   };
 
   const handleSearchForEdit = async (e: React.FormEvent) => {
@@ -82,6 +90,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         qtyTriples: 0,
         qtySimples: 0,
         deposit: 0,
+        paymentStatus: PaymentStatus.UNPAID,
         pickupBranch: PickupBranch.CENTRAL,
         id: '',
         customerName: '',
@@ -141,15 +150,18 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       qtySimples: Number(formData.qtySimples),
       notes: formData.notes || '',
       deposit: parseFloat(formData.deposit?.toString() || '0'),
+      paymentStatus: formData.paymentStatus || PaymentStatus.UNPAID,
       originBranch: session.currentProductionBranch,
       location: location,
+      packageCount: formData.packageCount || 0,
       status: status,
       deliveredAt: deliveredAt,
       createdBy: session.email,
     };
 
     try {
-      await saveOrder(newOrder);
+      // Pass isEditing flag to prevent duplicates on creation
+      await saveOrder(newOrder, isEditing);
       const action = isEditing ? 'actualizada' : 'guardada';
       setMessage({ type: 'success', text: `Comanda #${newOrder.id} ${action} exitosamente.` });
       refreshData(); 
@@ -168,7 +180,8 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             qtyTriples: 0,
             qtySimples: 0,
             notes: '',
-            deposit: 0
+            deposit: 0,
+            paymentStatus: PaymentStatus.UNPAID
         }));
         // Focus back on ID for rapid entry
         document.getElementById('comanda-id')?.focus();
@@ -178,7 +191,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       const errorText = e.message || JSON.stringify(e);
       let friendlyMsg = 'Error desconocido';
       
-      if (errorText.includes('duplicate key')) friendlyMsg = 'El número de comanda ya existe.';
+      // Custom handling for duplicates
+      if (errorText.includes('YA EXISTE')) friendlyMsg = errorText;
+      else if (errorText.includes('duplicate key')) friendlyMsg = 'El número de comanda ya existe. Use Buscar/Editar.';
       else if (errorText.includes('network')) friendlyMsg = 'Error de conexión.';
       else friendlyMsg = errorText;
 
@@ -186,8 +201,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     } finally {
       setIsSaving(false);
     }
-
-    setTimeout(() => setMessage(null), 5000);
   };
 
   return (
@@ -336,6 +349,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-mono font-bold text-lg"
                 value={formData.id || ''}
                 onChange={e => setFormData({...formData, id: e.target.value})}
+                onKeyDown={handleKeyDown}
                 placeholder="Ej: 1054"
                 disabled={isSaving || isEditing} 
                 />
@@ -359,6 +373,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none"
                 value={formData.pickupTime || ''}
                 onChange={e => setFormData({...formData, pickupTime: e.target.value})}
+                onKeyDown={handleKeyDown}
                 disabled={isSaving}
                 />
             </div>
@@ -373,6 +388,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase"
                 value={formData.customerName || ''}
                 onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})}
+                onKeyDown={handleKeyDown}
                 disabled={isSaving}
                 />
             </div>
@@ -383,6 +399,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none"
                 value={formData.phone || ''}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
+                onKeyDown={handleKeyDown}
                 disabled={isSaving}
                 />
             </div>
@@ -404,6 +421,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none"
                 value={formData.address || ''}
                 onChange={e => setFormData({...formData, address: e.target.value})}
+                onKeyDown={handleKeyDown}
                 disabled={isSaving}
                 />
             </div>
@@ -420,6 +438,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                     className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-orange-500 outline-none"
                     value={formData.qtyTriples}
                     onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})}
+                    onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
                 />
@@ -432,6 +451,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                     className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-orange-500 outline-none"
                     value={formData.qtySimples}
                     onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})}
+                    onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
                 />
@@ -450,17 +470,33 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             />
             </div>
 
-            <div>
-            <label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Seña ($)</label>
-            <input
-                type="number"
-                min="0"
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700"
-                value={formData.deposit}
-                onChange={e => setFormData({...formData, deposit: parseFloat(e.target.value) || 0})}
-                disabled={isSaving}
-                onFocus={e => e.target.select()}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Estado Pago</label>
+                    <select
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold"
+                        value={formData.paymentStatus}
+                        onChange={e => setFormData({...formData, paymentStatus: e.target.value as PaymentStatus})}
+                        disabled={isSaving}
+                    >
+                        {PAYMENT_STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Seña Abonada ($)</label>
+                    <input
+                        type="number"
+                        min="0"
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700"
+                        value={formData.deposit}
+                        onChange={e => setFormData({...formData, deposit: parseFloat(e.target.value) || 0})}
+                        onKeyDown={handleKeyDown}
+                        disabled={isSaving}
+                        onFocus={e => e.target.select()}
+                    />
+                </div>
             </div>
 
             <div className="pt-2 flex gap-3">

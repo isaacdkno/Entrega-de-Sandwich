@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppUser, UserRole, UserSession } from '../types';
-import { getAppUsers, saveAppUser, deleteAppUser } from '../services/storageService';
-import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User } from 'lucide-react';
+import { getAppUsers, saveAppUser, deleteAppUser, deleteAllOrders } from '../services/storageService';
+import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User, DatabaseZap } from 'lucide-react';
 
 interface UserManagementTabProps {
   currentUserSession: UserSession;
@@ -82,6 +82,25 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleWipeDatabase = async () => {
+      const confirm1 = confirm("⚠️ ¡PELIGRO! ESTO BORRARÁ TODOS LOS PEDIDOS DE LA BASE DE DATOS.\n\n¿Estás absolutamente seguro?");
+      if (!confirm1) return;
+      
+      const confirm2 = confirm("ÚLTIMA ADVERTENCIA.\n\nEsta acción es irreversible. Se borrarán todas las comandas y el historial.\n\nPresiona Aceptar para borrar todo.");
+      if (!confirm2) return;
+
+      setIsSaving(true);
+      try {
+          await deleteAllOrders();
+          alert("Base de datos vaciada correctamente.");
+      } catch(e) {
+          alert("Error al vaciar la base de datos.");
+          console.error(e);
+      } finally {
+          setIsSaving(false);
+      }
   };
 
   return (
@@ -178,7 +197,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-12">
          <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
             <h3 className="font-bold text-slate-700">Usuarios Autorizados ({users.length})</h3>
             {isLoading && <Loader2 className="animate-spin text-orange-500" size={20} />}
@@ -238,6 +257,27 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
             </table>
          </div>
       </div>
+
+      {/* DANGER ZONE - ONLY FOR ISAAC */}
+      {currentUserSession.email.toLowerCase() === 'isaacgomez78@gmail.com' && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-center gap-2 text-red-800 font-black text-lg mb-2">
+                  <DatabaseZap size={24} />
+                  ZONA DE PELIGRO (Solo Isaac)
+              </div>
+              <p className="text-red-600 mb-4">
+                  Esta sección permite realizar acciones destructivas sobre la base de datos.
+              </p>
+              <button 
+                onClick={handleWipeDatabase}
+                disabled={isSaving}
+                className="bg-red-600 text-white px-6 py-3 rounded font-bold hover:bg-red-700 flex items-center gap-2 shadow-lg"
+              >
+                 {isSaving ? <Loader2 className="animate-spin" /> : <Trash2 size={20} />}
+                 VACIAR BASE DE DATOS (Eliminar todos los pedidos)
+              </button>
+          </div>
+      )}
     </div>
   );
 };

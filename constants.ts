@@ -1,4 +1,4 @@
-import { PickupBranch, ProductionBranch } from './types';
+import { PickupBranch, ProductionBranch, PaymentStatus } from './types';
 
 export const PICKUP_DATES = ['24/12/2025', '31/12/2025'];
 
@@ -13,6 +13,12 @@ export const PICKUP_BRANCHES = [
 export const PRODUCTION_BRANCHES = [
   { value: ProductionBranch.CENTRAL, label: 'Fabrica Central' },
   { value: ProductionBranch.ACONQUIJA, label: 'Fabrica Aconquija' },
+];
+
+export const PAYMENT_STATUS_OPTIONS = [
+  { value: PaymentStatus.UNPAID, label: '🔴 Falta Abonar' },
+  { value: PaymentStatus.PARTIAL, label: '🟡 Con Seña' },
+  { value: PaymentStatus.PAID, label: '🟢 Pagado Total' },
 ];
 
 export const STORAGE_KEY_ORDERS = 'sandwich_orders_v1';

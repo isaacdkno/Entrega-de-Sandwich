@@ -6,18 +6,26 @@ interface TabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   userRole: UserRole;
+  userEmail: string;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ activeTab, setActiveTab, userRole }) => {
+export const Tabs: React.FC<TabsProps> = ({ activeTab, setActiveTab, userRole, userEmail }) => {
   const allTabs = [
     { id: 'carga', label: 'Carga', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.CARGADOR] },
     { id: 'ubicar', label: 'Ubicar', icon: MapPin, roles: [UserRole.ADMIN, UserRole.UBICADOR] },
     { id: 'entregar', label: 'Entregar', icon: PackageCheck, roles: [UserRole.ADMIN, UserRole.ENTREGADOR] },
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, roles: [UserRole.ADMIN] },
-    { id: 'usuarios', label: 'Usuarios', icon: Users, roles: [UserRole.ADMIN] },
+    { id: 'usuarios', label: 'Usuarios', icon: Users, roles: [] }, // Special handling for this tab
   ];
 
-  const visibleTabs = allTabs.filter(tab => tab.roles.includes(userRole));
+  const visibleTabs = allTabs.filter(tab => {
+    // Special rule for Users tab: Only Isaac
+    if (tab.id === 'usuarios') {
+        return userEmail.toLowerCase() === 'isaacgomez78@gmail.com';
+    }
+    // Standard role check for other tabs
+    return tab.roles.includes(userRole);
+  });
 
   return (
     <div className="bg-white border-b sticky top-0 z-10 shadow-sm">

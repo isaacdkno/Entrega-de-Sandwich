@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Order, OrderStatus, ProductionBranch } from '../types';
+import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Clock, Filter, Download, Send } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Clock, Filter, Download, Send, DollarSign } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -47,7 +47,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         "Triples", 
         "Simples", 
         "Seña", 
-        "Estado", 
+        "Estado Pago",
+        "Estado Pedido", 
         "Ubicacion",
         "Notas"
     ];
@@ -65,6 +66,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         o.qtyTriples,
         o.qtySimples,
         o.deposit,
+        o.paymentStatus || 'No definido',
         o.status,
         o.location || '',
         `"${o.notes.replace(/\n/g, ' ')}"` // Remove newlines from notes
@@ -102,6 +104,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const simplesDelivered = displayedOrders.filter(o => o.status === OrderStatus.DELIVERED).reduce((acc, o) => acc + o.qtySimples, 0);
   const simplesPendingProd = simplesTotal - simplesProduced;
   const simplesReadyToDeliver = simplesProduced - simplesDelivered;
+
+  // 3. Payment Status Stats
+  const countPaid = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PAID).length;
+  const countPartial = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PARTIAL).length;
+  const countUnpaid = displayedOrders.filter(o => !o.paymentStatus || o.paymentStatus === PaymentStatus.UNPAID).length;
+
 
   // 3. Chart Data (Group by Production Branch based on displayedOrders)
   const chartData = useMemo(() => {
@@ -279,6 +287,39 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
               <span className="hidden sm:inline">Excel</span>
           </button>
         </div>
+      </div>
+
+      {/* Payment Status Overview */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col sm:flex-row gap-4 justify-between animate-fade-in">
+         <div className="flex items-center gap-3">
+            <div className="bg-green-100 p-3 rounded-full">
+                <DollarSign className="text-green-600" size={24} />
+            </div>
+            <div>
+                <p className="text-sm font-bold text-slate-500 uppercase">Pagados</p>
+                <p className="text-2xl font-black text-slate-800">{countPaid}</p>
+            </div>
+         </div>
+         <div className="w-px bg-slate-100 hidden sm:block"></div>
+         <div className="flex items-center gap-3">
+            <div className="bg-yellow-100 p-3 rounded-full">
+                <DollarSign className="text-yellow-600" size={24} />
+            </div>
+            <div>
+                <p className="text-sm font-bold text-slate-500 uppercase">Con Seña</p>
+                <p className="text-2xl font-black text-slate-800">{countPartial}</p>
+            </div>
+         </div>
+         <div className="w-px bg-slate-100 hidden sm:block"></div>
+         <div className="flex items-center gap-3">
+            <div className="bg-red-100 p-3 rounded-full">
+                <DollarSign className="text-red-600" size={24} />
+            </div>
+            <div>
+                <p className="text-sm font-bold text-slate-500 uppercase">Falta Abonar</p>
+                <p className="text-2xl font-black text-slate-800">{countUnpaid}</p>
+            </div>
+         </div>
       </div>
 
       {/* KPI Cards - Triples & Simples */}

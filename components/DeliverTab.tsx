@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, PaymentStatus } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PICKUP_BRANCHES } from '../constants';
-import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck } from 'lucide-react';
+import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, DollarSign } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -86,7 +86,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
   const getStatusHeader = (order: Order) => {
       if (order.status === OrderStatus.DELIVERED) {
           return {
-              color: 'bg-teal-700', // Color más fuerte para la cabecera también
+              color: 'bg-teal-700', 
               text: `ENTREGADO A LAS ${formatTime(order.deliveredAt)}`
           };
       }
@@ -101,6 +101,15 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
           text: 'PENDIENTE DE ELABORACIÓN / SIN UBICACIÓN'
       };
   };
+
+  const getPaymentBadge = (status: PaymentStatus) => {
+      switch (status) {
+          case PaymentStatus.PAID: return <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded border border-green-200">PAGADO</span>;
+          case PaymentStatus.PARTIAL: return <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded border border-yellow-200">CON SEÑA</span>;
+          case PaymentStatus.UNPAID: return <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded border border-red-200">FALTA ABONAR</span>;
+          default: return null;
+      }
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -197,11 +206,16 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                        <span className="font-bold block text-xs uppercase text-slate-400">Retira en</span>
                        <span className="font-bold text-indigo-600">{order.pickupBranch}</span>
                     </div>
-                    {order.deposit > 0 && (
-                      <div className="sm:col-span-2 text-green-700 font-semibold border-t border-slate-200 pt-2 mt-1">
-                        ✅ Seña abonada: ${order.deposit}
-                      </div>
-                    )}
+                    <div className="sm:col-span-2 flex justify-between items-center border-t border-slate-200 pt-2 mt-1">
+                        <div className="flex items-center gap-2">
+                            {getPaymentBadge(order.paymentStatus || PaymentStatus.UNPAID)}
+                            {order.deposit > 0 && (
+                                <span className="text-green-700 font-semibold text-xs">
+                                    (Seña: ${order.deposit})
+                                </span>
+                            )}
+                        </div>
+                    </div>
                     {order.notes && (
                        <div className="sm:col-span-2 italic text-slate-500 border-t border-slate-200 pt-2 mt-1">
                          "{order.notes}"

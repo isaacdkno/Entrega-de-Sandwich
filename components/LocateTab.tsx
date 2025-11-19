@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Order } from '../types';
 import { updateOrderLocation } from '../services/storageService';
-import { MapPin, Search, Loader2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Package } from 'lucide-react';
 
 interface LocateTabProps {
   orders: Order[];
@@ -11,6 +11,7 @@ interface LocateTabProps {
 export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationInputs, setLocationInputs] = useState<Record<string, string>>({});
+  const [packageInputs, setPackageInputs] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const pendingLocationOrders = useMemo(() => {
@@ -28,17 +29,22 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
 
   const handleSaveLocation = async (id: string) => {
     const loc = locationInputs[id];
+    const pkgCount = parseInt(packageInputs[id] || '0');
+
     if (loc && loc.trim() !== '') {
       setLoadingId(id);
       try {
-        await updateOrderLocation(id, loc.toUpperCase());
+        await updateOrderLocation(id, loc.toUpperCase(), pkgCount);
         
         // Clear input from state
-        const newInputs = { ...locationInputs };
-        delete newInputs[id];
-        setLocationInputs(newInputs);
+        const newLocInputs = { ...locationInputs };
+        delete newLocInputs[id];
+        setLocationInputs(newLocInputs);
         
-        // Usually realtime will update, but simple fallback
+        const newPkgInputs = { ...packageInputs };
+        delete newPkgInputs[id];
+        setPackageInputs(newPkgInputs);
+        
         refreshData();
       } catch (e) {
         alert("Error guardando ubicación");
@@ -88,25 +94,50 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
                 </p>
               </div>
 
-              <div className="flex gap-2 w-full sm:w-auto">
-                <input
-                  type="text"
-                  placeholder="Ej: H1a"
-                  className="border rounded p-2 w-24 text-center uppercase font-bold focus:ring-2 focus:ring-orange-400 outline-none"
-                  value={locationInputs[order.id] || ''}
-                  onChange={(e) => setLocationInputs({...locationInputs, [order.id]: e.target.value})}
-                  disabled={loadingId === order.id}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveLocation(order.id);
-                  }}
-                />
+              <div className="flex gap-2 w-full sm:w-auto items-end">
+                <div className="flex-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase text-center mb-1">Ubicación</label>
+                    <div className="flex gap-2">
+                        <input
+                        type="text"
+                        placeholder="Ej: H1a"
+                        className="border rounded p-2 w-24 text-center uppercase font-bold focus:ring-2 focus:ring-orange-400 outline-none"
+                        value={locationInputs[order.id] || ''}
+                        onChange={(e) => setLocationInputs({...locationInputs, [order.id]: e.target.value})}
+                        disabled={loadingId === order.id}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveLocation(order.id);
+                        }}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase text-center mb-1">Paquetes</label>
+                    <div className="relative">
+                        <Package className="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            className="border rounded p-2 w-20 pl-7 text-center font-bold focus:ring-2 focus:ring-orange-400 outline-none"
+                            value={packageInputs[order.id] || ''}
+                            onChange={(e) => setPackageInputs({...packageInputs, [order.id]: e.target.value})}
+                            disabled={loadingId === order.id}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveLocation(order.id);
+                            }}
+                        />
+                    </div>
+                </div>
+
                 <button
-                  onClick={() => handleSaveLocation(order.id)}
-                  className="bg-slate-800 text-white p-2 rounded hover:bg-slate-700 flex items-center gap-2 disabled:opacity-50"
-                  disabled={!locationInputs[order.id] || loadingId === order.id}
+                onClick={() => handleSaveLocation(order.id)}
+                className="bg-slate-800 text-white p-2 rounded hover:bg-slate-700 flex items-center gap-2 disabled:opacity-50"
+                disabled={!locationInputs[order.id] || loadingId === order.id}
                 >
-                  {loadingId === order.id ? <Loader2 className="animate-spin" size={18} /> : <MapPin size={18} />}
-                  <span className="hidden sm:inline">Guardar</span>
+                {loadingId === order.id ? <Loader2 className="animate-spin" size={18} /> : <MapPin size={18} />}
+                <span className="hidden sm:inline">Guardar</span>
                 </button>
               </div>
             </div>
