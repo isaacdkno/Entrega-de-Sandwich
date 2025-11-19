@@ -4,7 +4,7 @@ import { Order, OrderStatus, PaymentStatus } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PICKUP_BRANCHES } from '../constants';
-import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, DollarSign } from 'lucide-react';
+import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, MapPin, Phone, Package } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -196,33 +196,51 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600 mb-6 bg-slate-50 p-4 rounded">
-                    <div>
-                       <span className="font-bold block text-xs uppercase text-slate-400">Detalle</span>
-                       <div className="flex gap-4">
-                         {order.qtyTriples > 0 && <span className="font-semibold text-slate-700">{order.qtyTriples} Triples</span>}
-                         {order.qtySimples > 0 && <span className="font-semibold text-slate-700">{order.qtySimples} Simples</span>}
-                       </div>
+                 <div className="bg-slate-50 p-4 rounded mb-6">
+                    {/* Basic Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600 mb-3">
+                        <div>
+                           <span className="font-bold block text-xs uppercase text-slate-400">Detalle</span>
+                           <div className="flex gap-4">
+                             {order.qtyTriples > 0 && <span className="font-semibold text-slate-700">{order.qtyTriples} Triples</span>}
+                             {order.qtySimples > 0 && <span className="font-semibold text-slate-700">{order.qtySimples} Simples</span>}
+                           </div>
+                        </div>
+                        <div>
+                           <span className="font-bold block text-xs uppercase text-slate-400">Retira en</span>
+                           <span className="font-bold text-indigo-600">{order.pickupBranch}</span>
+                        </div>
                     </div>
-                    <div>
-                       <span className="font-bold block text-xs uppercase text-slate-400">Retira en</span>
-                       <span className="font-bold text-indigo-600">{order.pickupBranch}</span>
-                    </div>
-                    <div className="sm:col-span-2 flex justify-between items-center border-t border-slate-200 pt-2 mt-1">
+
+                    {/* Logistics Info (Address, Phone, Packages) */}
+                    <div className="border-t border-slate-200 pt-3 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-start gap-2">
+                            <MapPin size={16} className="text-slate-400 mt-0.5 shrink-0" />
+                            <span className="font-medium text-slate-700 break-words text-sm">{order.address || 'Sin Dirección'}</span>
+                        </div>
                         <div className="flex items-center gap-2">
-                            {getPaymentBadge(order.paymentStatus || PaymentStatus.UNPAID)}
-                            {order.deposit > 0 && (
-                                <span className="text-green-700 font-semibold text-xs">
-                                    (Seña: ${order.deposit})
-                                </span>
-                            )}
+                            <Phone size={16} className="text-slate-400 shrink-0" />
+                            <span className="font-medium text-slate-700 text-sm">{order.phone || 'Sin Teléfono'}</span>
                         </div>
-                        <div className="text-xs text-slate-500 italic truncate max-w-[50%]">
-                            {order.address}
+                        <div className="sm:col-span-2 flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                                 {getPaymentBadge(order.paymentStatus || PaymentStatus.UNPAID)}
+                                 {order.deposit > 0 && (
+                                     <span className="text-green-700 font-semibold text-xs">
+                                         (Seña: ${order.deposit})
+                                     </span>
+                                 )}
+                             </div>
+                             
+                             <div className="flex items-center gap-2 bg-white border border-slate-200 px-2 py-1 rounded">
+                                <Package size={16} className="text-orange-500" />
+                                <span className="font-bold text-slate-800 text-sm">{order.packageCount || 0} Bultos</span>
+                             </div>
                         </div>
                     </div>
+
                     {order.notes && (
-                       <div className="sm:col-span-2 italic text-slate-500 border-t border-slate-200 pt-2 mt-1">
+                       <div className="italic text-slate-500 border-t border-slate-200 pt-2 mt-3 text-sm">
                          "{order.notes}"
                        </div>
                     )}
