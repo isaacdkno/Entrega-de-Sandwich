@@ -77,7 +77,7 @@ export const generateTicketPDF = (order: Order) => {
   // --- ESTADO DE PAGO ---
   doc.setFontSize(12);
   let paymentText = "FALTA ABONAR";
-  if (order.paymentStatus === PaymentStatus.PAID) paymentText = "TOTALMENTE PAGADO";
+  if (order.paymentStatus === PaymentStatus.PAID) paymentText = "PAGADO";
   if (order.paymentStatus === PaymentStatus.PARTIAL) paymentText = "CON SEÑA";
   
   doc.text(`ESTADO: ${paymentText}`, margin, y);
