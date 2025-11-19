@@ -20,6 +20,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const [searchResults, setSearchResults] = useState<Order[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   
+  // Local state to handle decimal input correctly (prevents "10." -> "10" glitch)
+  const [depositInput, setDepositInput] = useState('0');
+
   const [formData, setFormData] = useState<Partial<Order>>({
     pickupDate: '24/12/2025',
     pickupTime: '',
@@ -73,6 +76,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
   const loadOrderForEdit = (order: Order) => {
     setFormData(order);
+    setDepositInput(order.deposit.toString()); // Sync deposit input
     setIsEditing(true);
     setSearchResults([]); // Clear list
     setMessage({ type: 'success', text: `Pedido #${order.id} cargado para edición.` });
@@ -98,6 +102,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         phone: '',
         notes: ''
     });
+    setDepositInput('0'); // Reset deposit input
     setMessage(null);
   };
 
@@ -149,7 +154,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       qtyTriples: Number(formData.qtyTriples),
       qtySimples: Number(formData.qtySimples),
       notes: formData.notes || '',
-      deposit: parseFloat(formData.deposit?.toString() || '0'),
+      deposit: parseFloat(depositInput) || 0, // Use the robust input value
       paymentStatus: formData.paymentStatus || PaymentStatus.UNPAID,
       originBranch: session.currentProductionBranch,
       location: location,
@@ -183,6 +188,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             deposit: 0,
             paymentStatus: PaymentStatus.UNPAID
         }));
+        setDepositInput('0'); // Reset deposit input
         // Focus back on ID for rapid entry
         document.getElementById('comanda-id')?.focus();
       }
@@ -489,9 +495,14 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                     <input
                         type="number"
                         min="0"
+                        step="0.01"
                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700"
-                        value={formData.deposit}
-                        onChange={e => setFormData({...formData, deposit: parseFloat(e.target.value) || 0})}
+                        value={depositInput}
+                        onChange={e => {
+                            const val = e.target.value;
+                            setDepositInput(val);
+                            setFormData({...formData, deposit: val === '' ? 0 : parseFloat(val)});
+                        }}
                         onKeyDown={handleKeyDown}
                         disabled={isSaving}
                         onFocus={e => e.target.select()}
