@@ -9,7 +9,7 @@ import { StatsTab } from './components/StatsTab';
 import { UserManagementTab } from './components/UserManagementTab';
 import { getSession, clearSession, getOrders } from './services/storageService';
 import { supabase, isSupabaseConfigured } from './services/client';
-import { LogOut, AlertTriangle, Lock } from 'lucide-react';
+import { LogOut, AlertTriangle, Lock, WifiOff, Wifi } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<UserSession | null>(null);
@@ -17,6 +17,9 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState(false);
+  
+  // Network Status State
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const refreshOrders = useCallback(async () => {
     if (!isSupabaseConfigured()) {
@@ -55,6 +58,20 @@ const App: React.FC = () => {
           default: return 'carga';
       }
   };
+
+  // Network Monitor Effect
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     // 1. Check local session
@@ -116,16 +133,38 @@ const App: React.FC = () => {
   }
 
   if (!session) {
-    return <AuthScreen onLogin={handleLogin} />;
+    return (
+        <>
+            {!isOnline && (
+                <div className="bg-red-600 text-white p-3 text-center font-bold flex items-center justify-center gap-2 fixed top-0 w-full z-50 shadow-md">
+                    <WifiOff size={20} />
+                    SIN CONEXIÓN A INTERNET - Verifique su red
+                </div>
+            )}
+            <AuthScreen onLogin={handleLogin} />
+        </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      <header className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md">
+      {/* Offline Warning Banner */}
+      {!isOnline && (
+        <div className="bg-red-600 text-white p-2 text-center text-sm font-bold flex items-center justify-center gap-2 animate-pulse sticky top-0 z-50 shadow-md">
+            <WifiOff size={18} />
+            ⚠️ SIN CONEXIÓN - No intente guardar o entregar pedidos hasta que vuelva la red.
+        </div>
+      )}
+      {isOnline && (
+         // Optional: Brief Green flash or just hidden
+         null
+      )}
+
+      <header className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md relative">
         <div>
           <h1 className="font-bold text-lg leading-none">Sándwich Manager Pro</h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-400 animate-pulse' : isOnline ? 'bg-green-400' : 'bg-red-500'}`}></span>
             <div className="text-xs text-slate-400 flex flex-col">
                 <span>{session.email}</span>
                 <span className="uppercase font-bold text-orange-400 text-[10px]">{session.role}</span>
@@ -144,7 +183,7 @@ const App: React.FC = () => {
         userEmail={session.email}
       />
 
-      <main className="mt-4 animate-fade-in">
+      <main className={`mt-4 animate-fade-in ${!isOnline ? 'opacity-80 pointer-events-none blur-[1px]' : ''}`}>
         {activeTab === 'carga' && canAccessTab(session.role, 'carga', session.email) && (
           <LoadTab 
             session={session} 
