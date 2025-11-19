@@ -169,6 +169,12 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       await saveOrder(newOrder, isEditing);
       const action = isEditing ? 'actualizada' : 'guardada';
       setMessage({ type: 'success', text: `Comanda #${newOrder.id} ${action} exitosamente.` });
+      
+      // AUTO-HIDE SUCCESS MESSAGE AFTER 3 SECONDS
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
+
       refreshData(); 
       
       if (isEditing) {
@@ -539,7 +545,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
 
             {message && (
-            <div className={`p-4 rounded-xl text-center font-bold border ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+            <div className={`p-4 rounded-xl text-center font-bold border animate-fade-in ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                 {message.text}
             </div>
             )}
