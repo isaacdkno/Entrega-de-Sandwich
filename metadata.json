@@ -1,0 +1,5 @@
+{
+  "name": "Sándwich Manager Pro",
+  "description": "A comprehensive PWA-ready application for managing sandwich orders, production location, and delivery logistics for high-volume dates (24/12 & 31/12). Features order entry, storage location tracking, ticket printing, and AI-powered statistics.",
+  "requestFramePermissions": []
+}

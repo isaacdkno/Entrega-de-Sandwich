@@ -1,0 +1,21 @@
+{
+  "short_name": "Sándwich Pro",
+  "name": "Sándwich Manager Pro",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/6203/6203069.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/6203/6203069.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ea580c",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}
