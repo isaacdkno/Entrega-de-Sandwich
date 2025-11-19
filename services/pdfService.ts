@@ -66,6 +66,9 @@ export const generateTicketPDF = (order: Order) => {
   doc.text(`TRIPLES: ${order.qtyTriples}`, margin, y);
   y += 6;
   doc.text(`SIMPLES: ${order.qtySimples}`, margin, y);
+  y += 6;
+  // Agregamos la cantidad de paquetes aquí
+  doc.text(`BULTOS:  ${order.packageCount || 0}`, margin, y);
   y += 8;
 
   doc.line(margin, y, margin + width, y);
