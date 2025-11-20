@@ -453,6 +453,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                     onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
+                    onWheel={(e) => e.currentTarget.blur()}
                 />
                 </div>
                 <div>
@@ -466,6 +467,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                     onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
+                    onWheel={(e) => e.currentTarget.blur()}
                 />
                 </div>
             </div>
@@ -512,6 +514,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                         onKeyDown={handleKeyDown}
                         disabled={isSaving}
                         onFocus={e => e.target.select()}
+                        onWheel={(e) => e.currentTarget.blur()}
                     />
                 </div>
             </div>

@@ -127,6 +127,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') handleSaveLocation(order.id);
                             }}
+                            onWheel={(e) => e.currentTarget.blur()}
                         />
                     </div>
                 </div>
