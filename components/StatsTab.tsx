@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
-import { PICKUP_DATES, PRODUCTION_BRANCHES } from '../constants';
+import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Clock, Filter, Download, Send, DollarSign } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Clock, Filter, Download, Send, DollarSign, Store } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -127,7 +127,31 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     return Object.values(branchMap);
   }, [displayedOrders]);
 
-  // 4. Hourly Breakdown
+  // 4. Pickup Branch Distribution Stats
+  const pickupStats = useMemo(() => {
+    const stats: Record<string, { t: number; s: number }> = {};
+    
+    // Initialize with 0 for all known branches
+    PICKUP_BRANCHES.forEach(b => {
+        stats[b.label] = { t: 0, s: 0 };
+    });
+
+    displayedOrders.forEach(o => {
+        // Try to match by value or label
+        const branchObj = PICKUP_BRANCHES.find(b => b.value === o.pickupBranch);
+        const branchLabel = branchObj ? branchObj.label : o.pickupBranch; // Fallback to stored string
+
+        if (!stats[branchLabel]) stats[branchLabel] = { t: 0, s: 0 };
+        stats[branchLabel].t += o.qtyTriples;
+        stats[branchLabel].s += o.qtySimples;
+    });
+
+    return Object.entries(stats)
+        .map(([name, counts]) => ({ name, ...counts, total: counts.t + counts.s }))
+        .sort((a, b) => b.total - a.total); // Sort descending by volume
+  }, [displayedOrders]);
+
+  // 5. Hourly Breakdown
   const hourlyLoad = useMemo(() => {
       const data: Record<string, Record<string, { t: number, s: number }>> = {
           [ProductionBranch.CENTRAL]: {},
@@ -393,6 +417,29 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
              </div>
           </div>
         </div>
+      </div>
+
+      {/* Pickup Branch Breakdown */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 animate-fade-in">
+           <div className="flex items-center gap-2 mb-6 border-b pb-2">
+               <Store className="text-indigo-600" />
+               <h3 className="font-bold text-lg text-slate-800">Distribución por Sucursal de Retiro</h3>
+           </div>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {pickupStats.map(stat => (
+                 <div key={stat.name} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col">
+                    <p className="text-xs font-bold text-slate-500 uppercase mb-1 truncate" title={stat.name}>{stat.name}</p>
+                    <div className="flex items-end gap-2 mt-auto">
+                       <span className="text-2xl font-black text-slate-800">{stat.total}</span>
+                       <span className="text-xs text-slate-400 mb-1">u. total</span>
+                    </div>
+                    <div className="mt-3 text-xs flex gap-2 pt-2 border-t border-slate-200">
+                       <span className="font-bold text-blue-600">{stat.t} Trip.</span>
+                       <span className="font-bold text-orange-600">{stat.s} Simp.</span>
+                    </div>
+                 </div>
+              ))}
+           </div>
       </div>
       
       {/* Hourly Load Breakdown */}
