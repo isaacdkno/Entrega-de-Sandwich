@@ -53,6 +53,8 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
 
   let prompt = `
     Act as a logistics manager for a sandwich factory. 
+    **IMPORTANT: ALWAYS RESPOND IN SPANISH (Argentina).**
+    
     Here is the current status for the date: ${date}.
     **Report Scope: ${scope}**
     
@@ -72,7 +74,8 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
 
   if (customInstruction && customInstruction.trim() !== '') {
       prompt += `\n\nUSER QUESTION/INSTRUCTION: "${customInstruction}"\n
-      Based strictly on the provided data, answer the user's specific question or follow their instruction. Be concise and data-driven.`;
+      Based strictly on the provided data, answer the user's specific question or follow their instruction. 
+      **Output Language: Spanish.** Be concise and data-driven.`;
   } else {
       prompt += `\n\nPlease provide a brief, strategic executive summary (max 100 words) in Spanish for the factory team. 
       Identify bottlenecks (e.g., specific hours with high load or pending items) and suggest focus areas. Be encouraging but direct.`;
