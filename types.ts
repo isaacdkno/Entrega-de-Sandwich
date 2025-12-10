@@ -27,7 +27,8 @@ export enum UserRole {
   ADMIN = 'Administrador',
   CARGADOR = 'Cargador',
   UBICADOR = 'Ubicador',
-  ENTREGADOR = 'Entregador'
+  ENTREGADOR = 'Entregador',
+  OPERATOR = 'Operador'
 }
 
 export interface AppUser {

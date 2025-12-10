@@ -11,9 +11,9 @@ interface TabsProps {
 
 export const Tabs: React.FC<TabsProps> = ({ activeTab, setActiveTab, userRole, userEmail }) => {
   const allTabs = [
-    { id: 'carga', label: 'Carga', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.CARGADOR] },
-    { id: 'ubicar', label: 'Ubicar', icon: MapPin, roles: [UserRole.ADMIN, UserRole.UBICADOR] },
-    { id: 'entregar', label: 'Entregar', icon: PackageCheck, roles: [UserRole.ADMIN, UserRole.ENTREGADOR] },
+    { id: 'carga', label: 'Carga', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.CARGADOR, UserRole.OPERATOR] },
+    { id: 'ubicar', label: 'Ubicar', icon: MapPin, roles: [UserRole.ADMIN, UserRole.UBICADOR, UserRole.OPERATOR] },
+    { id: 'entregar', label: 'Entregar', icon: PackageCheck, roles: [UserRole.ADMIN, UserRole.ENTREGADOR, UserRole.OPERATOR] },
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, roles: [UserRole.ADMIN] },
     { id: 'usuarios', label: 'Usuarios', icon: Users, roles: [] }, // Special handling for this tab
   ];

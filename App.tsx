@@ -45,9 +45,15 @@ const App: React.FC = () => {
      }
 
      if (role === UserRole.ADMIN) return true;
+     
+     // Operator Permissions (All operational tabs)
+     if (role === UserRole.OPERATOR && ['carga', 'ubicar', 'entregar'].includes(tabId)) return true;
+
+     // Specific Role Permissions
      if (role === UserRole.CARGADOR && tabId === 'carga') return true;
      if (role === UserRole.UBICADOR && tabId === 'ubicar') return true;
      if (role === UserRole.ENTREGADOR && tabId === 'entregar') return true;
+     
      return false;
   };
 
@@ -55,6 +61,7 @@ const App: React.FC = () => {
       switch(role) {
           case UserRole.UBICADOR: return 'ubicar';
           case UserRole.ENTREGADOR: return 'entregar';
+          // Admin, Cargador, and Operator default to 'carga'
           default: return 'carga';
       }
   };

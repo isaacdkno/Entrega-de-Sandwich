@@ -167,6 +167,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                  <option value={UserRole.CARGADOR}>Cargador (Solo Carga)</option>
                  <option value={UserRole.UBICADOR}>Ubicador (Solo Ubicar)</option>
                  <option value={UserRole.ENTREGADOR}>Entregador (Solo Entregar)</option>
+                 <option value={UserRole.OPERATOR}>Operador (Carga, Ubica y Entrega)</option>
                  <option value={UserRole.ADMIN}>Administrador (Acceso Total)</option>
                </select>
             </div>
@@ -221,6 +222,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs font-bold border ${
                           user.role === UserRole.ADMIN ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                          user.role === UserRole.OPERATOR ? 'bg-cyan-100 text-cyan-800 border-cyan-200' :
                           user.role === UserRole.CARGADOR ? 'bg-blue-100 text-blue-800 border-blue-200' :
                           user.role === UserRole.UBICADOR ? 'bg-orange-100 text-orange-800 border-orange-200' :
                           'bg-green-100 text-green-800 border-green-200'
