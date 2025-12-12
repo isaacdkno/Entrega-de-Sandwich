@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, PaymentStatus } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PICKUP_BRANCHES } from '../constants';
-import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, MapPin, Phone, Package } from 'lucide-react';
+import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, MapPin, Phone, Package, Factory } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -168,6 +167,12 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
           {filteredOrders.map(order => {
             const statusStyle = getStatusHeader(order);
             const isDelivered = order.status === OrderStatus.DELIVERED;
+            
+            // Factory Colors
+            const isCentral = order.originBranch === 'Central';
+            const factoryBadgeColor = isCentral 
+                ? 'bg-sky-50 text-sky-700 border-sky-100' 
+                : 'bg-purple-50 text-purple-700 border-purple-100';
 
             return (
             <div key={order.id} className={`bg-white rounded-xl shadow-md overflow-hidden border ${isDelivered ? 'border-teal-200 bg-teal-50' : 'border-slate-200'} animate-fade-in`}>
@@ -186,7 +191,13 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                              </span>
                          )}
                       </div>
-                      <p className="text-slate-500 font-mono">Comanda #{order.id}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                          <p className="text-slate-500 font-mono">Comanda #{order.id}</p>
+                          {/* Factory Badge */}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${factoryBadgeColor}`}>
+                                <Factory size={12} /> {order.originBranch}
+                          </span>
+                      </div>
                     </div>
                     <div className="text-right">
                        <p className="text-2xl font-black text-orange-600">

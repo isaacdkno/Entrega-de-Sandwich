@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Order } from '../types';
 import { updateOrderLocation } from '../services/storageService';
-import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, CheckCircle, XCircle, Factory } from 'lucide-react';
 
 interface LocateTabProps {
   orders: Order[];
@@ -101,6 +101,12 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
 
       // Visual style depends on mode
       const borderColor = mode === 'edit' ? 'border-blue-400 ring-2 ring-blue-50' : 'border-orange-400';
+      
+      // Factory Colors
+      const isCentral = order.originBranch === 'Central';
+      const factoryBadgeColor = isCentral 
+        ? 'bg-sky-100 text-sky-800 border-sky-200' 
+        : 'bg-purple-100 text-purple-800 border-purple-200';
 
       return (
         <div key={order.id} className={`bg-white p-4 rounded-lg shadow-sm border-l-4 flex flex-col gap-3 animate-fade-in ${borderColor}`}>
@@ -108,10 +114,16 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
             {/* Card Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="bg-slate-100 text-slate-700 font-mono font-bold px-2 py-0.5 rounded text-sm">
                             #{order.id}
                         </span>
+                        
+                        {/* Factory Badge */}
+                        <span className={`text-[10px] px-2 py-0.5 rounded border font-bold flex items-center gap-1 uppercase ${factoryBadgeColor}`}>
+                             <Factory size={10} /> {order.originBranch}
+                        </span>
+
                         <span className="text-[10px] text-slate-500 border border-slate-200 px-1.5 rounded">
                             {order.pickupDate}
                         </span>
