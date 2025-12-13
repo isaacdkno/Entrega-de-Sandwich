@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserSession, Order, UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
@@ -54,6 +55,9 @@ const App: React.FC = () => {
      if (role === UserRole.UBICADOR && tabId === 'ubicar') return true;
      if (role === UserRole.ENTREGADOR && tabId === 'entregar') return true;
      
+     // New Hybrid Role
+     if (role === UserRole.LOCATOR_DELIVERER && ['ubicar', 'entregar'].includes(tabId)) return true;
+     
      return false;
   };
 
@@ -61,6 +65,7 @@ const App: React.FC = () => {
       switch(role) {
           case UserRole.UBICADOR: return 'ubicar';
           case UserRole.ENTREGADOR: return 'entregar';
+          case UserRole.LOCATOR_DELIVERER: return 'ubicar'; // Defaults to Locate
           // Admin, Cargador, and Operator default to 'carga'
           default: return 'carga';
       }

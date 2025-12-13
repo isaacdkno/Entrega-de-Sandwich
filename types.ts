@@ -1,3 +1,4 @@
+
 export enum PickupBranch {
   CENTRAL = 'Central',
   BUENOS_AIRES = 'Buenos Aires',
@@ -28,6 +29,7 @@ export enum UserRole {
   CARGADOR = 'Cargador',
   UBICADOR = 'Ubicador',
   ENTREGADOR = 'Entregador',
+  LOCATOR_DELIVERER = 'Entregador/Ubicador', // Nuevo Rol Híbrido
   OPERATOR = 'Operador'
 }
 

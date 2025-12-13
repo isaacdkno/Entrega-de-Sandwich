@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ClipboardList, MapPin, PackageCheck, BarChart3, Users } from 'lucide-react';
 import { UserRole } from '../types';
@@ -12,8 +13,8 @@ interface TabsProps {
 export const Tabs: React.FC<TabsProps> = ({ activeTab, setActiveTab, userRole, userEmail }) => {
   const allTabs = [
     { id: 'carga', label: 'Carga', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.CARGADOR, UserRole.OPERATOR] },
-    { id: 'ubicar', label: 'Ubicar', icon: MapPin, roles: [UserRole.ADMIN, UserRole.UBICADOR, UserRole.OPERATOR] },
-    { id: 'entregar', label: 'Entregar', icon: PackageCheck, roles: [UserRole.ADMIN, UserRole.ENTREGADOR, UserRole.OPERATOR] },
+    { id: 'ubicar', label: 'Ubicar', icon: MapPin, roles: [UserRole.ADMIN, UserRole.UBICADOR, UserRole.OPERATOR, UserRole.LOCATOR_DELIVERER] },
+    { id: 'entregar', label: 'Entregar', icon: PackageCheck, roles: [UserRole.ADMIN, UserRole.ENTREGADOR, UserRole.OPERATOR, UserRole.LOCATOR_DELIVERER] },
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, roles: [UserRole.ADMIN] },
     { id: 'usuarios', label: 'Usuarios', icon: Users, roles: [] }, // Special handling for this tab
   ];
