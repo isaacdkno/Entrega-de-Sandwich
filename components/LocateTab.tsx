@@ -97,7 +97,10 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
   const renderCard = (order: Order) => {
       const isLocated = !!order.location;
       const currentValueLoc = locationInputs[order.id] ?? order.location ?? '';
-      const currentValuePkg = packageInputs[order.id] ?? (order.packageCount?.toString() || '');
+      
+      // Determine Package Input Value (Hide 0)
+      const rawPkgVal = packageInputs[order.id] ?? (order.packageCount ? order.packageCount.toString() : '');
+      const currentValuePkg = rawPkgVal === '0' ? '' : rawPkgVal;
 
       // Visual style depends on mode
       const borderColor = mode === 'edit' ? 'border-blue-400 ring-2 ring-blue-50' : 'border-orange-400';
@@ -176,6 +179,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
                         onChange={(e) => setPackageInputs({...packageInputs, [order.id]: e.target.value})}
                         disabled={loadingId === order.id}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSaveLocation(order.id); }}
+                        onClick={e => e.currentTarget.select()}
                         onWheel={(e) => e.currentTarget.blur()}
                     />
                 </div>

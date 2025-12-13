@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
-import { PICKUP_BRANCHES, PICKUP_DATES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
+import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, deleteOrder, searchOrders } from '../services/storageService';
 import { Save, Settings, Loader2, Search, Trash2, XCircle, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -447,12 +447,14 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-orange-500 outline-none"
-                    value={formData.qtyTriples}
+                    value={formData.qtyTriples || ''}
                     onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})}
                     onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
+                    onClick={e => e.currentTarget.select()}
                     onWheel={(e) => e.currentTarget.blur()}
                 />
                 </div>
@@ -461,12 +463,14 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-orange-500 outline-none"
-                    value={formData.qtySimples}
+                    value={formData.qtySimples || ''}
                     onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})}
                     onKeyDown={handleKeyDown}
                     disabled={isSaving}
                     onFocus={e => e.target.select()}
+                    onClick={e => e.currentTarget.select()}
                     onWheel={(e) => e.currentTarget.blur()}
                 />
                 </div>
@@ -504,8 +508,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                         type="number"
                         min="0"
                         step="0.01"
+                        placeholder="0"
                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700"
-                        value={depositInput}
+                        value={depositInput === '0' ? '' : depositInput}
                         onChange={e => {
                             const val = e.target.value;
                             setDepositInput(val);
@@ -514,6 +519,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                         onKeyDown={handleKeyDown}
                         disabled={isSaving}
                         onFocus={e => e.target.select()}
+                        onClick={e => e.currentTarget.select()}
                         onWheel={(e) => e.currentTarget.blur()}
                     />
                 </div>
