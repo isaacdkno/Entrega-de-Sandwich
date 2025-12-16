@@ -255,9 +255,26 @@ export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?:
   }
 };
 
-export const updateOrderLocation = async (id: string, location: string, packageCount: number): Promise<void> => {
+// Updated: 'allowOverwrite' defaults to true for backward compatibility with other calls.
+// Pass false when you want to ensure the location is currently empty.
+export const updateOrderLocation = async (id: string, location: string, packageCount: number, allowOverwrite: boolean = true): Promise<void> => {
   if (!isSupabaseConfigured()) return;
 
+  // 1. Concurrency Check: If overwrite is NOT allowed, check DB first
+  if (!allowOverwrite) {
+     const { data: current, error } = await supabase
+        .from('orders')
+        .select('location')
+        .eq('id', id)
+        .single();
+
+     if (!error && current && current.location) {
+         // It has a location, so we block the update
+         throw new Error(`⛔ EL PEDIDO YA FUE UBICADO.\n\nUbicación actual: ${current.location}\n\nSi necesitas cambiarla, usa el modo "Editar / Corregir".`);
+     }
+  }
+
+  // 2. Perform Update
   const { error } = await supabase
     .from('orders')
     .update({ 
@@ -279,6 +296,7 @@ export const updateOrderLocation = async (id: string, location: string, packageC
             .eq('id', id);
       } else {
           console.error('Error updating location:', error);
+          throw new Error('Error de base de datos al guardar ubicación.');
       }
   }
 };

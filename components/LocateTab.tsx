@@ -73,7 +73,17 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
     if (rawLoc && rawLoc.trim() !== '') {
       setLoadingId(id);
       try {
-        await updateOrderLocation(id, rawLoc.toUpperCase(), parseInt(rawPkg) || 0);
+        // Determine if we allow overwriting
+        // mode === 'edit' -> TRUE (We want to correct/overwrite)
+        // mode === 'locate' -> FALSE (We want to be safe and block duplicates)
+        const allowOverwrite = mode === 'edit';
+
+        await updateOrderLocation(
+            id, 
+            rawLoc.toUpperCase(), 
+            parseInt(rawPkg) || 0,
+            allowOverwrite 
+        );
         
         // Clear inputs for this ID
         const newLocInputs = { ...locationInputs };
@@ -85,8 +95,10 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         setPackageInputs(newPkgInputs);
         
         refreshData();
-      } catch (e) {
-        alert("Error guardando ubicación");
+      } catch (e: any) {
+        // Display the friendly concurrency error message from the service
+        alert(e.message || "Error guardando ubicación");
+        refreshData(); // Refresh data so the user sees the real state
       } finally {
         setLoadingId(null);
       }
