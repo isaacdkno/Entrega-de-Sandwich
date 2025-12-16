@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
@@ -20,6 +21,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const [searchResults, setSearchResults] = useState<Order[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   
+  // Track original ID when editing to allow ID changes (renaming)
+  const [originalId, setOriginalId] = useState<string | null>(null);
+
   // Local state to handle decimal input correctly (prevents "10." -> "10" glitch)
   const [depositInput, setDepositInput] = useState('0');
 
@@ -77,6 +81,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const loadOrderForEdit = (order: Order) => {
     setFormData(order);
     setDepositInput(order.deposit.toString()); // Sync deposit input
+    setOriginalId(order.id); // Save the original ID to handle renaming
     setIsEditing(true);
     setSearchResults([]); // Clear list
     setMessage({ type: 'success', text: `Pedido #${order.id} cargado para edición.` });
@@ -86,6 +91,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setOriginalId(null);
     setSearchId('');
     setSearchResults([]);
     setFormData({
@@ -165,8 +171,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     };
 
     try {
-      // Pass isEditing flag to prevent duplicates on creation
-      await saveOrder(newOrder, isEditing);
+      // Pass isEditing flag and originalId to handle renaming logic
+      await saveOrder(newOrder, isEditing, originalId || undefined);
+      
       const action = isEditing ? 'actualizada' : 'guardada';
       setMessage({ type: 'success', text: `Comanda #${newOrder.id} ${action} exitosamente.` });
       
@@ -204,8 +211,8 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       let friendlyMsg = 'Error desconocido';
       
       // Custom handling for duplicates
-      if (errorText.includes('YA EXISTE')) friendlyMsg = errorText;
-      else if (errorText.includes('duplicate key')) friendlyMsg = 'El número de comanda ya existe. Use Buscar/Editar.';
+      if (errorText.includes('YA EXISTE') || errorText.includes('ya existe')) friendlyMsg = errorText;
+      else if (errorText.includes('duplicate key')) friendlyMsg = 'El número de comanda ya existe.';
       else if (errorText.includes('network')) friendlyMsg = 'Error de conexión.';
       else friendlyMsg = errorText;
 
@@ -338,7 +345,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
         <div className="flex justify-between items-center mb-6 mt-2">
              <h2 className={`text-xl font-bold ${isEditing ? 'text-blue-700' : 'text-slate-800'}`}>
-                 {isEditing ? `Editando Comanda #${formData.id}` : 'Nueva Comanda'}
+                 {isEditing ? `Editando Comanda #${originalId}` : 'Nueva Comanda'}
              </h2>
              {isEditing && (
                  <button 
@@ -363,7 +370,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 onChange={e => setFormData({...formData, id: e.target.value})}
                 onKeyDown={handleKeyDown}
                 placeholder="Ej: 1054"
-                disabled={isSaving || isEditing} 
+                disabled={isSaving} 
                 />
             </div>
             <div>

@@ -1,3 +1,4 @@
+
 import { Order, OrderStatus, UserSession, UserRole, AppUser, PaymentStatus } from '../types';
 import { STORAGE_KEY_SESSION } from '../constants';
 import { supabase, isSupabaseConfigured } from './client';
@@ -189,10 +190,36 @@ export const searchOrders = async (term: string): Promise<Order[]> => {
 };
 
 // Modified to accept an isUpdate flag to prevent accidental overwrites
-export const saveOrder = async (order: Order, isUpdate: boolean = false): Promise<void> => {
+// NEW: Accepts oldId to handle ID renaming
+export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?: string): Promise<void> => {
   if (!isSupabaseConfigured()) throw new Error("Base de datos no conectada");
 
-  // 1. Protection: If creating a new order (not editing), check if ID exists first
+  const dbData = mapToDb(order);
+
+  // CASE 1: Updating an existing order AND the ID has changed (Rename)
+  if (isUpdate && oldId && oldId !== order.id) {
+     // Check if the NEW ID already exists (collision check)
+     const { data: collision } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('id', order.id)
+        .single();
+     
+     if (collision) {
+         throw new Error(`No se puede cambiar el ID a #${order.id} porque ya existe otra comanda con ese número.`);
+     }
+
+     // Perform the update on the OLD ID row
+     const { error } = await supabase
+        .from('orders')
+        .update(dbData)
+        .eq('id', oldId);
+    
+     if (error) throw new Error(error.message);
+     return;
+  }
+
+  // CASE 2: Creating a new order
   if (!isUpdate) {
     const { data: existing } = await supabase
       .from('orders')
@@ -205,9 +232,7 @@ export const saveOrder = async (order: Order, isUpdate: boolean = false): Promis
     }
   }
 
-  const dbData = mapToDb(order);
-
-  // 2. Save
+  // CASE 3: Standard Update (Same ID) or Insert New
   const { error } = await supabase
     .from('orders')
     .upsert(dbData);
