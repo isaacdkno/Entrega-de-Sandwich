@@ -246,10 +246,10 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase">Detalle Pedido</h4>
             <div className="grid grid-cols-2 gap-6">
                 <div><label className="block text-xs uppercase text-slate-500 font-bold mb-1 text-center">Triples</label>
-                <input type="number" min="0" placeholder="0" className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onKeyDown={handleKeyDown} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
+                <input type="number" min="0" placeholder="0" className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onKeyDown={handleKeyDown} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
                 </div>
                 <div><label className="block text-xs uppercase text-slate-500 font-bold mb-1 text-center">Simples</label>
-                <input type="number" min="0" placeholder="0" className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onKeyDown={handleKeyDown} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
+                <input type="number" min="0" placeholder="0" className="w-full p-3 text-2xl font-black text-slate-800 border border-slate-300 rounded-lg text-center" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onKeyDown={handleKeyDown} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
                 </div>
             </div>
             </div>
@@ -264,7 +264,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                         {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select>
                 </div>
                 <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Seña Abonada ($)</label>
-                    <input type="number" min="0" step="0.01" placeholder="0" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: e.target.value === '' ? 0 : parseFloat(e.target.value)}); }} onKeyDown={handleKeyDown} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
+                    <input type="number" min="0" step="0.01" placeholder="0" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold text-lg text-green-700" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: e.target.value === '' ? 0 : parseFloat(e.target.value)}); }} onKeyDown={handleKeyDown} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} onFocus={e => e.target.select()} onClick={e => e.currentTarget.select()} />
                 </div>
             </div>
 
