@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, searchOrders, deleteOrder } from '../services/storageService';
-import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2, Calendar, Clock, MapPin, Package, DollarSign, StickyNote } from 'lucide-react';
+import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2, Calendar, Clock, MapPin, Package, DollarSign, StickyNote, Phone } from 'lucide-react';
 
 interface LoadTabProps {
   session: UserSession;
@@ -191,33 +191,39 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
           {searchResults.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {searchResults.map(r => (
-                <div key={r.id} className="bg-white rounded-2xl p-5 border border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between">
+                <div key={r.id} className="bg-white rounded-2xl p-6 border border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start mb-3 border-b border-slate-50 pb-2">
-                       <span className="font-black text-slate-900 text-3xl tracking-tighter">#{r.id}</span>
-                       <button onClick={() => loadOrderForEdit(r)} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-black text-xs uppercase flex items-center gap-2 hover:bg-blue-700 transition-colors">
-                          <Edit3 size={14} /> EDITAR
+                    <div className="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
+                       <span className="font-black text-slate-900 text-5xl tracking-tighter">#{r.id}</span>
+                       <button onClick={() => loadOrderForEdit(r)} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm">
+                          <Edit3 size={16} /> EDITAR
                        </button>
                     </div>
                     
-                    <h4 className="font-black text-slate-800 uppercase text-lg mb-3 leading-tight">{r.customerName}</h4>
+                    <h4 className="font-black text-slate-800 uppercase text-2xl mb-4 leading-tight">{r.customerName}</h4>
                     
-                    <div className="grid grid-cols-2 gap-y-3 text-xs mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-2 text-sm mb-6">
                        <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Calendar size={14} className="text-blue-500" /> {r.pickupDate}
+                          <Calendar size={18} className="text-blue-500" /> {r.pickupDate}
                        </div>
                        <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Clock size={14} className="text-blue-500" /> {r.pickupTime}
+                          <Clock size={18} className="text-blue-500" /> {r.pickupTime}
+                       </div>
+                       <div className="flex items-center gap-2 text-slate-900 font-black text-lg sm:col-span-2">
+                          <Phone size={20} className="text-green-600" /> {r.phone || 'SIN TELÉFONO'}
+                       </div>
+                       <div className="flex items-start gap-2 text-slate-800 font-bold text-base sm:col-span-2 leading-snug">
+                          <MapPin size={20} className="text-orange-600 mt-1 flex-shrink-0" /> {r.address || 'SIN DIRECCIÓN'}
                        </div>
                        <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <MapPin size={14} className="text-blue-500" /> {r.pickupBranch}
+                          <Package size={18} className="text-blue-500" /> {r.qtyTriples}T | {r.qtySimples}S
                        </div>
                        <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Package size={14} className="text-blue-500" /> {r.qtyTriples}T | {r.qtySimples}S
+                          <Settings size={18} className="text-blue-500" /> {r.pickupBranch}
                        </div>
-                       <div className="col-span-2 flex items-center gap-2">
-                          <DollarSign size={14} className="text-green-600" />
-                          <span className={`px-2 py-0.5 rounded-md font-black uppercase text-[10px] border ${r.paymentStatus === PaymentStatus.PAID ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                       <div className="col-span-1 sm:col-span-2 flex items-center gap-2 mt-2">
+                          <DollarSign size={18} className="text-green-600" />
+                          <span className={`px-3 py-1 rounded-lg font-black uppercase text-xs border ${r.paymentStatus === PaymentStatus.PAID ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
                              {r.paymentStatus} (${r.deposit} seña)
                           </span>
                        </div>
@@ -225,9 +231,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                   </div>
 
                   {r.notes && (
-                    <div className="bg-slate-50 p-2 rounded-lg flex items-start gap-2 border border-slate-100 italic text-[11px] text-slate-600">
-                       <StickyNote size={12} className="flex-shrink-0 mt-0.5 text-slate-400" />
-                       <span className="line-clamp-2">{r.notes}</span>
+                    <div className="bg-slate-50 p-3 rounded-xl flex items-start gap-2 border border-slate-100 italic text-xs text-slate-600">
+                       <StickyNote size={14} className="flex-shrink-0 mt-0.5 text-slate-400" />
+                       <span className="line-clamp-3">{r.notes}</span>
                     </div>
                   )}
                 </div>
