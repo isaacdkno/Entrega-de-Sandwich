@@ -77,6 +77,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setMessage(null);
   };
 
+  // Función crítica para evitar que la rueda del ratón cambie los números al scrollear
   const handleWheelDisable = (e: React.WheelEvent<HTMLInputElement>) => {
     (e.target as HTMLInputElement).blur();
   };
@@ -190,7 +191,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS PERSONALES Y DE RETIRO */}
+          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
             {/* 1. Número de comanda */}
             <div className="space-y-2">
@@ -212,16 +213,13 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <input type="time" required className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* 4. Nombre Completo (Optimizado: Ocupa 2 columnas en PC para ser más visible) */}
-            <div className="space-y-2 lg:col-span-1">
+            {/* Espaciador para mantener estructura en PC */}
+            <div className="hidden lg:block"></div>
+
+            {/* 4. Nombre Completo (Optimizado: Grande y sobre dirección) */}
+            <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
-            </div>
-
-            {/* 5. Dirección */}
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
-              <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
             </div>
 
             {/* 6. Teléfono */}
@@ -237,9 +235,15 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
+
+            {/* 5. Dirección (Optimizado: Debajo de nombre) */}
+            <div className="space-y-2 lg:col-span-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
+              <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
+            </div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (Protección contra rueda del ratón) */}
+          {/* SECCIÓN 2: CANTIDADES (Protección contra rueda del ratón reforzada) */}
           <div className="bg-slate-900 p-8 rounded-[2rem] border-b-8 border-slate-800 shadow-xl">
              <div className="flex items-center gap-3 mb-6">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
@@ -303,22 +307,22 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 disabled={isSaving} 
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Observaciones / Notas internas</label>
-              <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa, Cliente habitual..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
+              <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
             </div>
           </div>
 
-          {/* ACCIÓN DE GUARDADO (Optimizado: Menos altura, texto claro) */}
-          <div className="pt-4 space-y-4">
-             <button type="submit" disabled={isSaving} className={`w-full py-4 rounded-[1.5rem] font-black text-xl shadow-xl transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
-                {isSaving ? <Loader2 className="animate-spin" size={28} /> : <Save size={28} />}
+          {/* ACCIÓN DE GUARDADO (Optimizado: Más pequeño y centrado) */}
+          <div className="pt-2 flex flex-col items-center gap-4">
+             <button type="submit" disabled={isSaving} className={`w-full max-w-sm py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+                {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
                 {isSaving ? 'GUARDANDO...' : 'GUARDAR COMANDA'}
              </button>
 
              {message && (
-               <div className={`p-4 rounded-[1.5rem] text-center font-black text-base border-2 animate-fade-in flex items-center justify-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                 <AlertCircle size={20} />
+               <div className={`w-full max-w-md p-3 rounded-xl text-center font-black text-sm border-2 animate-fade-in flex items-center justify-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                 <AlertCircle size={18} />
                  {message.text}
                </div>
              )}
