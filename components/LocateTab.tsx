@@ -34,6 +34,9 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
 
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
+    
+    // REQUERIMIENTO: Si no hay término de búsqueda, no mostrar nada
+    if (!q) return [];
 
     return orders.filter(o => {
         if (o.pickupDate !== selectedDate) return false;
@@ -44,7 +47,6 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         if (mode === 'locate' && hasLoc) return false;
         if (mode === 'edit' && !hasLoc) return false;
 
-        if (!q) return true;
         return (
             o.id.toLowerCase().includes(q) ||
             o.customerName.toLowerCase().includes(q) ||
@@ -178,7 +180,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
               <div className="relative">
                   <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
                   <select 
-                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
+                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none shadow-sm"
                     value={selectedDate}
                     onChange={e => setSelectedDate(e.target.value)}
                   >
@@ -188,7 +190,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
               <div className="relative">
                   <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
                   <select 
-                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
+                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none shadow-sm"
                     value={filterFactory}
                     onChange={e => setFilterFactory(e.target.value)}
                   >
@@ -202,7 +204,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
               <input 
                 type="text"
                 className="w-full pl-11 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner"
-                placeholder="Buscar por comanda o cliente..."
+                placeholder="Ingresa número de comanda o cliente..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -210,14 +212,21 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
       </div>
 
       <div className="space-y-4">
-          {filteredOrders.length === 0 ? (
+          {!searchTerm.trim() ? (
+             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 flex flex-col items-center gap-3">
+                 <Search size={48} className="opacity-10" />
+                 <div className="max-w-xs px-4">
+                     <p className="font-bold text-slate-600 uppercase text-xs tracking-widest">Esperando búsqueda</p>
+                     <p className="text-[11px] mt-1">Escribe un <b>Número de Comanda</b> o <b>Nombre</b> para ver los resultados.</p>
+                 </div>
+             </div>
+          ) : filteredOrders.length === 0 ? (
              <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 flex flex-col items-center gap-3">
                  <Package size={48} className="opacity-20" />
                  <div className="max-w-xs">
-                     <p className="font-bold text-slate-500">No hay pedidos pendientes.</p>
-                     <p className="text-xs mt-1">Verifica que la <b>Fecha</b> y la <b>Fábrica</b> arriba sean las correctas para tu sucursal.</p>
+                     <p className="font-bold text-slate-500">No se encontraron resultados.</p>
+                     <p className="text-xs mt-1 text-slate-400">Prueba con otro número o verifica los filtros superiores.</p>
                  </div>
-                 <button onClick={handleManualRefresh} className="mt-2 text-blue-600 font-bold text-xs underline">Recargar lista ahora</button>
              </div>
           ) : (
              filteredOrders.map(order => renderCard(order))
