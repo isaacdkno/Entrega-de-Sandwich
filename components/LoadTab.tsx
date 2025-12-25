@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, searchOrders, deleteOrder } from '../services/storageService';
-import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2 } from 'lucide-react';
+import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2, Calendar, Clock, MapPin, Package, DollarSign, StickyNote } from 'lucide-react';
 
 interface LoadTabProps {
   session: UserSession;
@@ -56,7 +56,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     try {
       const results = await searchOrders(searchId);
       if (results.length === 0) setMessage({ type: 'error', text: 'No se encontraron pedidos.' });
-      else if (results.length === 1) loadOrderForEdit(results[0]);
       else setSearchResults(results);
     } catch {
       setMessage({ type: 'error', text: 'Error de red.' });
@@ -71,6 +70,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setOriginalId(order.id);
     setIsEditing(true);
     setSearchResults([]);
+    setShowSearchPanel(false);
     setMessage({ type: 'success', text: `Editando #${order.id}` });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -160,7 +160,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
           <ChevronDown size={14} />
         </button>
         <button 
-          onClick={() => setShowSearchPanel(!showSearchPanel)}
+          onClick={() => { setShowSearchPanel(!showSearchPanel); setSearchResults([]); }}
           className={`px-4 py-2 rounded-2xl font-bold text-sm flex items-center gap-2 transition-all ${showSearchPanel ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
         >
           {showSearchPanel ? <ChevronUp size={16} /> : <Search size={16} />}
@@ -179,24 +179,58 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       )}
 
       {showSearchPanel && (
-        <div className="bg-blue-50 p-4 rounded-3xl border border-blue-100 shadow-inner animate-fade-in">
-          <form onSubmit={handleSearchForEdit} className="flex gap-2">
-            <input type="text" placeholder="ID Comanda o Nombre de Cliente..." className="flex-1 p-4 rounded-2xl border border-blue-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none font-bold" value={searchId} onChange={e => setSearchId(e.target.value)} />
-            <button type="submit" disabled={isSearching} className="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-md font-bold flex items-center gap-2">
+        <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-inner animate-fade-in">
+          <form onSubmit={handleSearchForEdit} className="flex gap-2 mb-6">
+            <input type="text" placeholder="Escriba Comanda, Nombre o Teléfono..." className="flex-1 p-4 rounded-2xl border border-blue-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none font-bold" value={searchId} onChange={e => setSearchId(e.target.value)} />
+            <button type="submit" disabled={isSearching} className="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-md font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors">
               {isSearching ? <Loader2 className="animate-spin" size={20}/> : <Search size={20} />}
               BUSCAR
             </button>
           </form>
+
           {searchResults.length > 0 && (
-            <div className="mt-3 bg-white rounded-2xl overflow-hidden border border-blue-100 shadow-xl max-h-64 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {searchResults.map(r => (
-                <button key={r.id} onClick={() => loadOrderForEdit(r)} className="w-full text-left p-4 border-b last:border-0 hover:bg-blue-50 flex justify-between items-center transition-colors">
+                <div key={r.id} className="bg-white rounded-2xl p-5 border border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between">
                   <div>
-                    <span className="font-black text-slate-800 text-lg">#{r.id}</span>
-                    <span className="ml-4 text-slate-600 font-bold uppercase">{r.customerName}</span>
+                    <div className="flex justify-between items-start mb-3 border-b border-slate-50 pb-2">
+                       <span className="font-black text-slate-900 text-3xl tracking-tighter">#{r.id}</span>
+                       <button onClick={() => loadOrderForEdit(r)} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-black text-xs uppercase flex items-center gap-2 hover:bg-blue-700 transition-colors">
+                          <Edit3 size={14} /> EDITAR
+                       </button>
+                    </div>
+                    
+                    <h4 className="font-black text-slate-800 uppercase text-lg mb-3 leading-tight">{r.customerName}</h4>
+                    
+                    <div className="grid grid-cols-2 gap-y-3 text-xs mb-4">
+                       <div className="flex items-center gap-2 text-slate-500 font-bold">
+                          <Calendar size={14} className="text-blue-500" /> {r.pickupDate}
+                       </div>
+                       <div className="flex items-center gap-2 text-slate-500 font-bold">
+                          <Clock size={14} className="text-blue-500" /> {r.pickupTime}
+                       </div>
+                       <div className="flex items-center gap-2 text-slate-500 font-bold">
+                          <MapPin size={14} className="text-blue-500" /> {r.pickupBranch}
+                       </div>
+                       <div className="flex items-center gap-2 text-slate-500 font-bold">
+                          <Package size={14} className="text-blue-500" /> {r.qtyTriples}T | {r.qtySimples}S
+                       </div>
+                       <div className="col-span-2 flex items-center gap-2">
+                          <DollarSign size={14} className="text-green-600" />
+                          <span className={`px-2 py-0.5 rounded-md font-black uppercase text-[10px] border ${r.paymentStatus === PaymentStatus.PAID ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                             {r.paymentStatus} (${r.deposit} seña)
+                          </span>
+                       </div>
+                    </div>
                   </div>
-                  <Edit3 size={18} className="text-blue-500" />
-                </button>
+
+                  {r.notes && (
+                    <div className="bg-slate-50 p-2 rounded-lg flex items-start gap-2 border border-slate-100 italic text-[11px] text-slate-600">
+                       <StickyNote size={12} className="flex-shrink-0 mt-0.5 text-slate-400" />
+                       <span className="line-clamp-2">{r.notes}</span>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
