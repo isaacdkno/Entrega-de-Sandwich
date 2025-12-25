@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, searchOrders } from '../services/storageService';
@@ -32,6 +32,16 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     pickupBranch: PickupBranch.CENTRAL,
   });
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // Efecto para hacer desaparecer el mensaje automáticamente después de 5 segundos
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   const handleSettingsChange = (branch: ProductionBranch) => {
     onSessionUpdate({ ...session, currentProductionBranch: branch });
@@ -77,7 +87,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setMessage(null);
   };
 
-  // Función crítica para evitar que la rueda del ratón cambie los números al scrollear
   const handleWheelDisable = (e: React.WheelEvent<HTMLInputElement>) => {
     (e.target as HTMLInputElement).blur();
   };
@@ -191,15 +200,13 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES (DISTRIBUCIÓN SOLICITADA) */}
+          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-            {/* 1. Número de comanda */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">1. Número de comanda</label>
               <input id="comanda-id" type="text" required placeholder="Ej: 0542" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-orange-500 outline-none font-mono font-black text-2xl transition-all shadow-sm" value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* 2. Fecha de retiro */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">2. Fecha de retiro</label>
               <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.pickupDate} onChange={e => setFormData({...formData, pickupDate: e.target.value as any})} disabled={isSaving}>
@@ -207,37 +214,30 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               </select>
             </div>
 
-            {/* 3. Hora */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">3. Hora de retiro</label>
               <input type="time" required className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* Espaciador */}
             <div className="hidden lg:block"></div>
 
-            {/* 4. Nombre Completo (Ocupa 2 columnas) */}
             <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
             </div>
 
-            {/* 5. Dirección (Ocupa 2 columnas, a la par de nombre) */}
             <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
               <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* Espaciador para empujar teléfono a la 3ra columna (debajo de dirección) */}
             <div className="hidden lg:block lg:col-span-2"></div>
 
-            {/* 6. Teléfono (Debajo de dirección) */}
             <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
               <input type="tel" placeholder="3816543210" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* 7. Sucursal de retiro (A la par de teléfono) */}
             <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">7. Sucursal de retiro</label>
               <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
@@ -246,44 +246,40 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (8) */}
-          <div className="bg-slate-900 p-8 rounded-[2rem] border-b-8 border-slate-800 shadow-xl">
-             <div className="flex items-center gap-3 mb-6">
+          {/* SECCIÓN 2: CANTIDADES (Rediseño Armónico) */}
+          <div className="space-y-6 pt-4">
+             <div className="flex items-center gap-3">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
-                <h3 className="text-white font-black uppercase text-sm tracking-widest">8. Cantidades de Sándwiches</h3>
+                <h3 className="text-slate-800 font-black uppercase text-sm tracking-widest">8. Cantidades de Sándwiches</h3>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="flex items-center gap-6 bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
-                    <div className="flex-1">
-                        <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">Unid. Triples</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          placeholder="0" 
-                          className="w-full bg-slate-900 p-4 text-5xl font-black text-blue-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-blue-500 outline-none transition-all" 
-                          value={formData.qtyTriples || ''} 
-                          onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} 
-                          onFocus={e => e.target.select()} 
-                          onWheel={handleWheelDisable}
-                          disabled={isSaving} 
-                        />
-                    </div>
+                <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 text-blue-600">Unid. Triples</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      placeholder="0" 
+                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl focus:bg-white focus:border-blue-500 outline-none transition-all shadow-sm text-center" 
+                      value={formData.qtyTriples || ''} 
+                      onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} 
+                      onFocus={e => e.target.select()} 
+                      onWheel={handleWheelDisable}
+                      disabled={isSaving} 
+                    />
                 </div>
-                <div className="flex items-center gap-6 bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
-                    <div className="flex-1">
-                        <label className="text-[10px] font-black text-orange-400 uppercase tracking-widest block mb-2">Unid. Simples</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          placeholder="0" 
-                          className="w-full bg-slate-900 p-4 text-5xl font-black text-orange-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-orange-500 outline-none transition-all" 
-                          value={formData.qtySimples || ''} 
-                          onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} 
-                          onFocus={e => e.target.select()} 
-                          onWheel={handleWheelDisable}
-                          disabled={isSaving} 
-                        />
-                    </div>
+                <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 text-orange-600">Unid. Simples</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      placeholder="0" 
+                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm text-center" 
+                      value={formData.qtySimples || ''} 
+                      onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} 
+                      onFocus={e => e.target.select()} 
+                      onWheel={handleWheelDisable}
+                      disabled={isSaving} 
+                    />
                 </div>
              </div>
           </div>
@@ -313,17 +309,16 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               </div>
             </div>
 
-            {/* Observaciones (Debajo de pago y monto) */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Observaciones / Notas internas</label>
               <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa, Cliente habitual..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
             </div>
           </div>
 
-          {/* ACCIÓN DE GUARDADO (Optimizado: Pequeño y centrado) */}
+          {/* ACCIÓN DE GUARDADO (Aún más compacto y centrado) */}
           <div className="pt-2 flex flex-col items-center gap-4">
-             <button type="submit" disabled={isSaving} className={`w-full max-w-xs py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
-                {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
+             <button type="submit" disabled={isSaving} className={`w-full max-w-[240px] py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+                {isSaving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
                 {isSaving ? 'GUARDANDO...' : 'GUARDAR COMANDA'}
              </button>
 
