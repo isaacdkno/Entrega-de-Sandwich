@@ -54,16 +54,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     });
   }, [orders, searchTerm, filterBranch, filterFactory, selectedDate]);
 
-  const { totalInView, deliveredInView, progressPercent } = useMemo(() => {
-    const total = filteredOrders.length;
-    const delivered = filteredOrders.filter(o => o.status === OrderStatus.DELIVERED).length;
-    return {
-      totalInView: total,
-      deliveredInView: delivered,
-      progressPercent: total > 0 ? Math.round((delivered / total) * 100) : 0
-    };
-  }, [filteredOrders]);
-
   const handlePrint = (order: Order) => {
     generateTicketPDF(order);
   };
@@ -92,7 +82,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
        <div className="bg-orange-600 p-6 rounded-2xl shadow-lg mb-4 text-white border-b-4 border-orange-700">
          <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-black flex items-center gap-2 tracking-tighter uppercase">
-                <PackageCheck size={28} /> Despacho
+                <PackageCheck size={28} /> Entregas
             </h2>
             <button 
                 onClick={handleManualRefresh} 
@@ -133,30 +123,11 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                 onChange={e => setFilterFactory(e.target.value)}
               >
                 <option value="ALL">Fábrica: Todas</option>
-                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.label}>{b.label}</option>)}
               </select>
            </div>
          </div>
        </div>
-
-       {/* Barra de Progreso Compacta */}
-       {totalInView > 0 && (
-         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-4 animate-fade-in sticky top-[10px] z-40 sm:relative sm:top-0">
-            <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600">
-               <Truck size={20} />
-            </div>
-            <div className="flex-1">
-               <div className="flex justify-between items-end mb-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progreso de Despacho Actual</span>
-                  <span className="text-xs font-black text-emerald-600">{deliveredInView} / {totalInView}</span>
-               </div>
-               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
-                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }}></div>
-               </div>
-            </div>
-            <div className="text-xl font-black text-slate-800">{progressPercent}%</div>
-         </div>
-       )}
 
        <div className="space-y-4">
           {filteredOrders.length === 0 && (
