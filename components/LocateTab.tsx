@@ -176,9 +176,9 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
               <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
                   <select 
-                    className="w-full pl-9 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
+                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
                     value={selectedDate}
                     onChange={e => setSelectedDate(e.target.value)}
                   >
@@ -186,9 +186,9 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
                   </select>
               </div>
               <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
                   <select 
-                    className="w-full pl-9 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
+                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none"
                     value={filterFactory}
                     onChange={e => setFilterFactory(e.target.value)}
                   >
@@ -198,10 +198,10 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
               </div>
           </div>
           <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input 
                 type="text"
-                className="w-full pl-10 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner"
+                className="w-full pl-11 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner"
                 placeholder="Buscar por comanda o cliente..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}

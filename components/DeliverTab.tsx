@@ -78,7 +78,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
 
   return (
     <div className="max-w-4xl mx-auto p-2 sm:p-4 pb-24">
-       {/* Header de Filtros - Más compacto en móvil */}
+       {/* Header de Filtros */}
        <div className="bg-orange-600 p-4 sm:p-6 rounded-2xl shadow-lg mb-4 text-white border-b-4 border-orange-700">
          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2 tracking-tighter uppercase">
@@ -92,22 +92,22 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
             </button>
          </div>
          
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
            <div className="sm:col-span-2 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text"
-                className="w-full pl-10 p-2.5 sm:p-3 rounded-xl text-slate-900 outline-none shadow-inner font-bold text-xs sm:text-sm"
-                placeholder="Buscar comanda..."
+                className="w-full pl-11 p-3 rounded-xl text-slate-900 outline-none shadow-inner font-bold text-sm"
+                placeholder="Buscar comanda o cliente..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
            </div>
            
            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
+              <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none z-10" size={16} />
               <select 
-                className="w-full pl-9 p-2.5 sm:p-3 rounded-xl text-slate-900 outline-none font-bold text-xs sm:text-sm appearance-none bg-white cursor-pointer"
+                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer shadow-sm"
                 value={selectedDate}
                 onChange={e => setSelectedDate(e.target.value)}
               >
@@ -116,9 +116,9 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
            </div>
 
            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
+              <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none z-10" size={16} />
               <select
-                className="w-full pl-9 p-2.5 sm:p-3 rounded-xl text-slate-900 outline-none font-bold text-xs sm:text-sm appearance-none bg-white cursor-pointer"
+                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer shadow-sm"
                 value={filterFactory}
                 onChange={e => setFilterFactory(e.target.value)}
               >
