@@ -200,7 +200,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
+          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES (DISTRIBUCIÓN SOLICITADA) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">1. Número de comanda</label>
@@ -221,6 +221,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
             <div className="hidden lg:block"></div>
 
+            {/* Fila: Nombre y Dirección */}
             <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
@@ -231,8 +232,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
             </div>
 
-            <div className="hidden lg:block lg:col-span-2"></div>
-
+            {/* Fila: Teléfono y Sucursal (Corridos a la izquierda) */}
             <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
               <input type="tel" placeholder="3816543210" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
@@ -244,9 +244,12 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
+
+            {/* Espaciador para las 2 columnas restantes de esta fila en PC */}
+            <div className="hidden lg:block lg:col-span-2"></div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (Rediseño Armónico) */}
+          {/* SECCIÓN 2: CANTIDADES (Armónico) */}
           <div className="space-y-6 pt-4">
              <div className="flex items-center gap-3">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
@@ -315,7 +318,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* ACCIÓN DE GUARDADO (Aún más compacto y centrado) */}
+          {/* ACCIÓN DE GUARDADO (Compacto y centrado) */}
           <div className="pt-2 flex flex-col items-center gap-4">
              <button type="submit" disabled={isSaving} className={`w-full max-w-[240px] py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
                 {isSaving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
