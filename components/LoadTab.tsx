@@ -191,7 +191,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
+          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES (DISTRIBUCIÓN SOLICITADA) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
             {/* 1. Número de comanda */}
             <div className="space-y-2">
@@ -213,37 +213,40 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <input type="time" required className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* Espaciador para mantener estructura en PC */}
+            {/* Espaciador */}
             <div className="hidden lg:block"></div>
 
-            {/* 4. Nombre Completo (Optimizado: Grande y sobre dirección) */}
+            {/* 4. Nombre Completo (Ocupa 2 columnas) */}
             <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
             </div>
 
-            {/* 6. Teléfono */}
-            <div className="space-y-2">
+            {/* 5. Dirección (Ocupa 2 columnas, a la par de nombre) */}
+            <div className="space-y-2 lg:col-span-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
+              <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
+            </div>
+
+            {/* Espaciador para empujar teléfono a la 3ra columna (debajo de dirección) */}
+            <div className="hidden lg:block lg:col-span-2"></div>
+
+            {/* 6. Teléfono (Debajo de dirección) */}
+            <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
               <input type="tel" placeholder="3816543210" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* 7. Sucursal de retiro */}
-            <div className="space-y-2">
+            {/* 7. Sucursal de retiro (A la par de teléfono) */}
+            <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">7. Sucursal de retiro</label>
               <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
                 {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
-
-            {/* 5. Dirección (Optimizado: Debajo de nombre) */}
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
-              <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
-            </div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (Protección contra rueda del ratón reforzada) */}
+          {/* SECCIÓN 2: CANTIDADES (8) */}
           <div className="bg-slate-900 p-8 rounded-[2rem] border-b-8 border-slate-800 shadow-xl">
              <div className="flex items-center gap-3 mb-6">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
@@ -285,37 +288,41 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
              </div>
           </div>
 
-          {/* SECCIÓN 3: PAGO Y NOTAS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Estado de Pago</label>
-              <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.paymentStatus} onChange={e => setFormData({...formData, paymentStatus: e.target.value as PaymentStatus})} disabled={isSaving}>
-                {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
+          {/* SECCIÓN 3: PAGO Y OBSERVACIONES */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Estado de Pago</label>
+                <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.paymentStatus} onChange={e => setFormData({...formData, paymentStatus: e.target.value as PaymentStatus})} disabled={isSaving}>
+                  {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Monto de Seña ($)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="100" 
+                  placeholder="0.00" 
+                  className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl text-green-700 focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" 
+                  value={depositInput === '0' ? '' : depositInput} 
+                  onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} 
+                  onWheel={handleWheelDisable}
+                  disabled={isSaving} 
+                />
+              </div>
             </div>
+
+            {/* Observaciones (Debajo de pago y monto) */}
             <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Monto de Seña ($)</label>
-              <input 
-                type="number" 
-                min="0" 
-                step="100" 
-                placeholder="0.00" 
-                className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl text-green-700 focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" 
-                value={depositInput === '0' ? '' : depositInput} 
-                onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} 
-                onWheel={handleWheelDisable}
-                disabled={isSaving} 
-              />
-            </div>
-            <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Observaciones / Notas internas</label>
-              <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
+              <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa, Cliente habitual..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
             </div>
           </div>
 
-          {/* ACCIÓN DE GUARDADO (Optimizado: Más pequeño y centrado) */}
+          {/* ACCIÓN DE GUARDADO (Optimizado: Pequeño y centrado) */}
           <div className="pt-2 flex flex-col items-center gap-4">
-             <button type="submit" disabled={isSaving} className={`w-full max-w-sm py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+             <button type="submit" disabled={isSaving} className={`w-full max-w-xs py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
                 {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
                 {isSaving ? 'GUARDANDO...' : 'GUARDAR COMANDA'}
              </button>
