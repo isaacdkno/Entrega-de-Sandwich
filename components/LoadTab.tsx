@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
-import { saveOrder, searchOrders } from '../services/storageService';
-import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { saveOrder, searchOrders, deleteOrder } from '../services/storageService';
+import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2 } from 'lucide-react';
 
 interface LoadTabProps {
   session: UserSession;
@@ -85,6 +85,24 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     });
     setDepositInput('0');
     setMessage(null);
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!originalId) return;
+    const confirmed = confirm(`¿ESTÁS SEGURO? Se eliminará permanentemente la comanda #${originalId}.`);
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    try {
+      await deleteOrder(originalId);
+      setMessage({ type: 'success', text: `Comanda #${originalId} eliminada.` });
+      refreshData();
+      handleCancelEdit();
+    } catch (e: any) {
+      setMessage({ type: 'error', text: 'No se pudo eliminar: ' + e.message });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleWheelDisable = (e: React.WheelEvent<HTMLInputElement>) => {
@@ -187,20 +205,32 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
       {/* Main Form Section */}
       <div className={`bg-white rounded-[2.5rem] p-8 shadow-md border transition-all ${isEditing ? 'ring-8 ring-blue-50 border-blue-300' : 'border-slate-100'}`}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
             <h2 className="text-3xl font-black text-slate-800 tracking-tighter flex items-center gap-3">
                 {isEditing ? <Edit3 className="text-blue-600" size={32} /> : <PlusCircle className="text-orange-600" size={32} />}
                 {isEditing ? `EDITANDO COMANDA #${originalId}` : 'NUEVA CARGA DE PEDIDO'}
             </h2>
             {isEditing && (
-              <button onClick={handleCancelEdit} className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors">
-                <XCircle size={18} /> Cancelar edición
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleDeleteOrder} 
+                  disabled={isSaving}
+                  className="bg-red-50 px-4 py-2 rounded-xl text-xs font-black text-red-600 uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-colors border border-red-100"
+                >
+                  <Trash2 size={18} /> Eliminar Comanda
+                </button>
+                <button 
+                  onClick={handleCancelEdit} 
+                  className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors"
+                >
+                  <XCircle size={18} /> Cancelar edición
+                </button>
+              </div>
             )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES (DISTRIBUCIÓN SOLICITADA) */}
+          {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">1. Número de comanda</label>
@@ -221,7 +251,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
             <div className="hidden lg:block"></div>
 
-            {/* Fila: Nombre y Dirección */}
             <div className="space-y-2 lg:col-span-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
@@ -232,7 +261,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* Fila: Teléfono y Sucursal (Corridos a la izquierda) */}
             <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
               <input type="tel" placeholder="3816543210" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
@@ -245,11 +273,10 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               </select>
             </div>
 
-            {/* Espaciador para las 2 columnas restantes de esta fila en PC */}
             <div className="hidden lg:block lg:col-span-2"></div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (Armónico) */}
+          {/* SECCIÓN 2: CANTIDADES */}
           <div className="space-y-6 pt-4">
              <div className="flex items-center gap-3">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
@@ -318,7 +345,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* ACCIÓN DE GUARDADO (Compacto y centrado) */}
+          {/* ACCIÓN DE GUARDADO */}
           <div className="pt-2 flex flex-col items-center gap-4">
              <button type="submit" disabled={isSaving} className={`w-full max-w-[240px] py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
                 {isSaving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
