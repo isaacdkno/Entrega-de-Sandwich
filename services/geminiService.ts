@@ -3,84 +3,80 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Fix: Obtained API key exclusively from process.env.API_KEY as per guidelines
+  // Inicialización del cliente con la API Key del entorno
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  // Calculate Order Status Metrics
+  // Cálculo de métricas generales
   const totalOrders = orders.length;
   const ordersWithLocation = orders.filter(o => o.location).length;
-  const ordersDelivered = orders.filter(o => o.deliveredAt).length;
-  const ordersPendingLocation = totalOrders - ordersWithLocation;
-
-  // Calculate Sandwich Unit Metrics
+  const ordersDelivered = orders.filter(o => o.status === 'Entregado').length;
+  
   const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
-  const producedTriples = orders.filter(o => o.location).reduce((acc, o) => acc + o.qtyTriples, 0);
-  
   const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
-  const producedSimples = orders.filter(o => o.location).reduce((acc, o) => acc + o.qtySimples, 0);
 
-  // Prepare a summarized data set for the AI to minimize token usage but maximize context
+  // Agregación horaria para análisis de carga
   const hourlyLoad: Record<string, any> = {};
-  
-  // Create a detailed string representation of ALL orders so the AI can "read" specific records
-  // We format this to be token-efficient but informative
-  const ordersListText = orders.map(o => {
-      const hour = o.pickupTime ? o.pickupTime.split(':')[0] : 'Unknown';
-      
-      // Hourly aggregation logic
-      if (!hourlyLoad[hour]) hourlyLoad[hour] = { triples: 0, simples: 0, count: 0 };
-      hourlyLoad[hour].triples += o.qtyTriples;
-      hourlyLoad[hour].simples += o.qtySimples;
-      hourlyLoad[hour].count += 1;
+  const ordersListText = orders.slice(0, 100).map(o => { // Limitamos a los primeros 100 para evitar exceder tokens
+      const hour = o.pickupTime ? o.pickupTime.split(':')[0] : 'Desconocida';
+      if (!hourlyLoad[hour]) hourlyLoad[hour] = { t: 0, s: 0, c: 0 };
+      hourlyLoad[hour].t += o.qtyTriples;
+      hourlyLoad[hour].s += o.qtySimples;
+      hourlyLoad[hour].c += 1;
 
-      // Individual Record String
-      return `- ID: ${o.id} | Cliente: ${o.customerName} | Hora: ${o.pickupTime} | Items: ${o.qtyTriples}T/${o.qtySimples}S | Estado: ${o.status} | Ubic: ${o.location || 'N/A'} | Pago: ${o.paymentStatus} | Fabrica: ${o.originBranch} | Notas: ${o.notes || '---'}`;
+      return `- #${o.id} | ${o.customerName} | ${o.pickupTime} | ${o.qtyTriples}T/${o.qtySimples}S | ${o.status} | ${o.location || 'Sin Ubic'} | Pago: ${o.paymentStatus}`;
   }).join('\n');
 
-  let prompt = `
-    Act as a logistics manager for a sandwich factory using Gemini 3 Flash.
-    **IMPORTANT: ALWAYS RESPOND IN SPANISH (Argentina).**
-    
-    Here is the current status for the date: ${date}.
-    **Report Scope: ${scope}**
-    
-    **Orders Overview:**
-    - Total Orders: ${totalOrders}
-    - Orders Completed (Produced): ${ordersWithLocation}
-    - Orders Delivered: ${ordersDelivered}
-    - Orders Pending Production: ${ordersPendingLocation}
+  const prompt = `
+    Eres un experto en logística de una fábrica de sándwiches de miga.
+    Analiza los siguientes datos para la fecha: ${date} (${scope}).
 
-    **Production Output (Units):**
-    - Triples: ${producedTriples} made / ${totalTriples} total required.
-    - Simples: ${producedSimples} made / ${totalSimples} total required.
+    RESUMEN GENERAL:
+    - Comandas Totales: ${totalOrders}
+    - Producidas (con ubicación): ${ordersWithLocation}
+    - Entregadas: ${ordersDelivered}
+    - Unidades Totales requeridas: ${totalTriples} Triples, ${totalSimples} Simples.
 
-    **Hourly Load Distribution (Hour: Volume):**
+    DISTRIBUCIÓN POR HORA (Hora: {t: Triples, s: Simples, c: Comandas}):
     ${JSON.stringify(hourlyLoad)}
 
-    **FULL DETAILED ORDER LIST (DATA SOURCE):**
+    LISTADO DETALLADO (Muestra parcial):
     ${ordersListText}
+
+    ${customInstruction && customInstruction.trim() !== '' 
+      ? `PREGUNTA ESPECÍFICA DEL USUARIO: "${customInstruction}"` 
+      : 'Proporciona un resumen ejecutivo breve (máximo 120 palabras) con recomendaciones estratégicas para el equipo de producción y despacho. Identifica cuellos de botella basándote en las horas pico.'
+    }
+
+    Responde siempre en ESPAÑOL (Argentina), de forma directa, profesional y basada exclusivamente en los datos proporcionados.
   `;
 
-  if (customInstruction && customInstruction.trim() !== '') {
-      prompt += `\n\nUSER QUESTION/INSTRUCTION: "${customInstruction}"\n
-      Based on the provided data (summary and detailed list), answer the user's specific question.
-      You have access to specific IDs, names, and notes in the 'FULL DETAILED ORDER LIST' section.
-      **Output Language: Spanish.** Be concise and data-driven.`;
-  } else {
-      prompt += `\n\nPlease provide a brief, strategic executive summary (max 100 words) in Spanish for the factory team. 
-      Identify bottlenecks (e.g., specific hours with high load or pending items) and suggest focus areas. Be encouraging but direct.`;
-  }
-
   try {
-    // Fix: Used gemini-3-flash-preview as recommended for basic/summarization tasks
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
+      model: "gemini-3-pro-preview", // Modelo Pro para mejor razonamiento logístico
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0.7,
+        topP: 0.95,
+      }
     });
-    // Fix: Accessed .text property directly
-    return response.text || "No analysis generated.";
-  } catch (error) {
+
+    // Validamos que exista respuesta antes de acceder a .text
+    if (!response || !response.text) {
+      return "El servicio de IA no devolvió contenido. Por favor, intente con una consulta más específica.";
+    }
+
+    return response.text;
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return "Error connecting to AI service. Please check your API Key or internet connection.";
+    
+    // Manejo de errores específicos
+    if (error.message?.includes('429')) {
+      return "⚠️ Se ha alcanzado el límite de consultas (Quota Exceeded). Por favor, espere un momento antes de reintentar.";
+    }
+    if (error.message?.includes('API key')) {
+      return "⚠️ Error de configuración: API Key no válida o no encontrada.";
+    }
+    
+    return "No se pudo conectar con el servicio de IA. Verifique su conexión a internet.";
   }
 };
