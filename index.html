@@ -21,15 +21,35 @@
         overscroll-behavior-y: none;
       }
 
-      /* Ocultar flechas de inputs numéricos para evitar cambios accidentales en PC */
-      /* Chrome, Safari, Edge, Opera */
+      /* Scrollbar Personalizado y Visible */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        display: block; /* Forzar visibilidad en algunos motores */
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #ea580c;
+        border-radius: 10px;
+        border: 2px solid #f1f5f9;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #c2410c;
+      }
+      /* Para Firefox */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #ea580c #f1f5f9;
+      }
+
+      /* Ocultar flechas de inputs numéricos */
       input::-webkit-outer-spin-button,
       input::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
       }
-
-      /* Firefox */
       input[type=number] {
         -moz-appearance: textfield;
       }
