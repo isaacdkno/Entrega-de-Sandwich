@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -63,16 +63,19 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const triplesTotal = displayedOrders.reduce((acc, o) => acc + o.qtyTriples, 0);
   const triplesProduced = displayedOrders.filter(o => o.location).reduce((acc, o) => acc + o.qtyTriples, 0);
   const triplesDelivered = displayedOrders.filter(o => o.status === OrderStatus.DELIVERED).reduce((acc, o) => acc + o.qtyTriples, 0);
-  const triplesPendingProd = triplesTotal - triplesProduced;
   
   const triplesPercent = triplesTotal > 0 ? Math.round((triplesProduced / triplesTotal) * 100) : 0;
 
   const simplesTotal = displayedOrders.reduce((acc, o) => acc + o.qtySimples, 0);
   const simplesProduced = displayedOrders.filter(o => o.location).reduce((acc, o) => acc + o.qtySimples, 0);
   const simplesDelivered = displayedOrders.filter(o => o.status === OrderStatus.DELIVERED).reduce((acc, o) => acc + o.qtySimples, 0);
-  const simplesPendingProd = simplesTotal - simplesProduced;
 
   const simplesPercent = simplesTotal > 0 ? Math.round((simplesProduced / simplesTotal) * 100) : 0;
+
+  // Entrega Total
+  const totalUnits = triplesTotal + simplesTotal;
+  const totalDelivered = triplesDelivered + simplesDelivered;
+  const deliveryPercent = totalUnits > 0 ? Math.round((totalDelivered / totalUnits) * 100) : 0;
 
   const countPaid = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PAID).length;
   const countPartial = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PARTIAL).length;
@@ -146,7 +149,26 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         </div>
       </div>
 
-      {/* Tarjetas Financieras (Iconos de Pesos) */}
+      {/* Tarjeta de Progreso de Entregas Principal */}
+      <div className="bg-emerald-600 rounded-[2rem] p-6 mb-10 text-white shadow-xl shadow-emerald-900/10 flex flex-col md:flex-row items-center justify-between gap-6 border-b-8 border-emerald-800">
+         <div className="flex items-center gap-5">
+            <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-md">
+                <Truck size={36} className="text-white" />
+            </div>
+            <div>
+               <h3 className="text-xl font-black uppercase tracking-tighter leading-none mb-1">Progreso de Despacho Total</h3>
+               <p className="text-emerald-100 text-xs font-bold">{totalDelivered} de {totalUnits} unidades ya entregadas</p>
+            </div>
+         </div>
+         <div className="w-full md:w-1/3 text-center md:text-right">
+            <span className="text-5xl font-black tracking-tighter">{deliveryPercent}%</span>
+            <div className="w-full bg-emerald-900/30 h-3 rounded-full mt-2 overflow-hidden border border-emerald-400/20">
+               <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${deliveryPercent}%` }}></div>
+            </div>
+         </div>
+      </div>
+
+      {/* Tarjetas Financieras */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-5">
             <div className="bg-emerald-100 p-4 rounded-full text-emerald-600"><DollarSign size={28} strokeWidth={3} /></div>
@@ -162,7 +184,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* Resumen de Producción con Barras de Progreso */}
+      {/* Resumen de Producción */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         {/* Triples Card */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -174,30 +196,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
              <span className="text-2xl font-black text-blue-600">{triplesPercent}%</span>
           </div>
           
-          {/* Barra de Progreso */}
           <div className="w-full bg-slate-100 h-4 rounded-full mb-8 overflow-hidden">
-             <div 
-               className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(37,99,235,0.4)]" 
-               style={{ width: `${triplesPercent}%` }}
-             ></div>
+             <div className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out" style={{ width: `${triplesPercent}%` }}></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
              <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                <p className="text-blue-700 text-[10px] font-black uppercase tracking-widest mb-1">Total Encargado</p>
+                <p className="text-blue-700 text-[10px] font-black uppercase tracking-widest mb-1">Encargado</p>
                 <p className="text-4xl font-black text-blue-900">{triplesTotal}</p>
              </div>
-             <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                <p className="text-rose-700 text-[10px] font-black uppercase tracking-widest mb-1">Faltan Elaborar</p>
-                <p className="text-4xl font-black text-rose-800">{triplesPendingProd}</p>
-             </div>
              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-1">Listos (Ubicados)</p>
+                <p className="text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-1">Listos</p>
                 <p className="text-4xl font-black text-emerald-800">{triplesProduced}</p>
-             </div>
-             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Ya Entregados</p>
-                <p className="text-4xl font-black text-slate-700">{triplesDelivered}</p>
              </div>
           </div>
         </div>
@@ -212,30 +222,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
              <span className="text-2xl font-black text-orange-600">{simplesPercent}%</span>
           </div>
           
-          {/* Barra de Progreso */}
           <div className="w-full bg-slate-100 h-4 rounded-full mb-8 overflow-hidden">
-             <div 
-               className="h-full bg-orange-600 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(234,88,12,0.4)]" 
-               style={{ width: `${simplesPercent}%` }}
-             ></div>
+             <div className="h-full bg-orange-600 rounded-full transition-all duration-1000 ease-out" style={{ width: `${simplesPercent}%` }}></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
              <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                <p className="text-orange-700 text-[10px] font-black uppercase tracking-widest mb-1">Total Encargado</p>
+                <p className="text-orange-700 text-[10px] font-black uppercase tracking-widest mb-1">Encargado</p>
                 <p className="text-4xl font-black text-orange-900">{simplesTotal}</p>
              </div>
-             <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                <p className="text-rose-700 text-[10px] font-black uppercase tracking-widest mb-1">Faltan Elaborar</p>
-                <p className="text-4xl font-black text-rose-800">{simplesPendingProd}</p>
-             </div>
              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-1">Listos (Ubicados)</p>
+                <p className="text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-1">Listos</p>
                 <p className="text-4xl font-black text-emerald-800">{simplesProduced}</p>
-             </div>
-             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Ya Entregados</p>
-                <p className="text-4xl font-black text-slate-700">{simplesDelivered}</p>
              </div>
           </div>
         </div>
@@ -322,7 +320,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             <input 
                type="text" 
                className="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-orange-500 outline-none transition-all font-bold"
-               placeholder="Pregunta algo específico: '¿Cual es el cliente con más triples?'..."
+               placeholder="Pregunta algo específico..."
                value={customAiPrompt}
                onChange={e => setCustomAiPrompt(e.target.value)}
             />

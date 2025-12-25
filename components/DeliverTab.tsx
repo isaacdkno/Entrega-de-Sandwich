@@ -4,7 +4,7 @@ import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PICKUP_BRANCHES, PRODUCTION_BRANCHES, PICKUP_DATES } from '../constants';
-import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar } from 'lucide-react';
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar, Truck } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -54,6 +54,17 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     });
   }, [orders, searchTerm, filterBranch, filterFactory, selectedDate]);
 
+  // Cálculos de progreso para la vista actual
+  const { totalInView, deliveredInView, progressPercent } = useMemo(() => {
+    const total = filteredOrders.length;
+    const delivered = filteredOrders.filter(o => o.status === OrderStatus.DELIVERED).length;
+    return {
+      totalInView: total,
+      deliveredInView: delivered,
+      progressPercent: total > 0 ? Math.round((delivered / total) * 100) : 0
+    };
+  }, [filteredOrders]);
+
   const handlePrint = (order: Order) => {
     generateTicketPDF(order);
   };
@@ -78,7 +89,8 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
 
   return (
     <div className="max-w-4xl mx-auto p-4 pb-24">
-       <div className="bg-orange-600 p-6 rounded-2xl shadow-lg mb-6 text-white border-b-4 border-orange-700">
+       {/* Header de Búsqueda y Filtros */}
+       <div className="bg-orange-600 p-6 rounded-2xl shadow-lg mb-4 text-white border-b-4 border-orange-700">
          <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold flex items-center gap-2">
                 <PackageCheck size={28} /> Entrega
@@ -92,7 +104,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
             </button>
          </div>
          
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
            <div className="lg:col-span-2 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input 
@@ -129,12 +141,31 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
          </div>
        </div>
 
+       {/* Barra de Progreso de Entregas (Mini) */}
+       {totalInView > 0 && (
+         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-6 sticky top-[100px] z-40 flex items-center gap-4 animate-fade-in">
+            <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
+               <Truck size={20} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+               <div className="flex justify-between items-end mb-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progreso de Despacho</span>
+                  <span className="text-xs font-black text-emerald-600">{deliveredInView} / {totalInView}</span>
+               </div>
+               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200 shadow-inner">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }}></div>
+               </div>
+            </div>
+            <div className="text-xl font-black text-slate-800">{progressPercent}%</div>
+         </div>
+       )}
+
        <div className="space-y-4">
           {filteredOrders.length === 0 && (
              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
                <Search size={40} className="opacity-20" />
                <p className="font-medium text-slate-500">No hay pedidos para mostrar.</p>
-               <p className="text-xs px-8">Verifica el filtro de <b>Fecha</b> y <b>Fábrica</b>. Quizás el pedido está cargado para otro día.</p>
+               <p className="text-xs px-8">Verifica el filtro de <b>Fecha</b> y <b>Fábrica</b>.</p>
              </div>
           )}
 
