@@ -4,7 +4,7 @@ import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PICKUP_BRANCHES, PRODUCTION_BRANCHES, PICKUP_DATES } from '../constants';
-import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar, Truck } from 'lucide-react';
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar, Truck, Phone } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -42,7 +42,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
       result = result.filter(o => 
         o.id.toLowerCase().includes(q) ||
         o.customerName.toLowerCase().includes(q) ||
-        o.phone.includes(q) ||
+        (o.phone && o.phone.includes(q)) ||
         o.address.toLowerCase().includes(q)
       );
     }
@@ -151,36 +151,45 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                <div className="p-5">
                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-xl font-black text-slate-900 leading-tight uppercase tracking-tighter">{order.customerName}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs font-mono font-black text-slate-400">#{order.id}</span>
+                      <h3 className="text-2xl font-black text-slate-900 leading-tight uppercase tracking-tighter">{order.customerName}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                          <span className="text-4xl font-mono font-black text-slate-900">#{order.id}</span>
                           <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border uppercase flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
                                 <Factory size={10} /> {order.originBranch}
                           </span>
                       </div>
                     </div>
                     <div className="text-right">
-                       <p className="text-2xl font-black text-orange-600 leading-none">{order.qtyTriples + order.qtySimples}</p>
+                       <p className="text-3xl font-black text-orange-600 leading-none">{order.qtyTriples + order.qtySimples}</p>
                        <p className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">Unidades</p>
-                       <span className="text-[10px] bg-blue-600 text-white px-2 py-1 rounded-lg font-black shadow-sm uppercase">{order.pickupTime}</span>
+                       <span className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg font-black shadow-sm uppercase">{order.pickupTime}</span>
                     </div>
                  </div>
 
-                 <div className="bg-slate-50 p-3 rounded-xl mb-4 text-xs border border-slate-100">
-                    <div className="flex justify-between mb-2">
-                        <span className="text-slate-500 font-bold">RETIRO: <b className="text-slate-900">{order.pickupBranch}</b></span>
-                        <div className="flex gap-3">
-                             <span className="font-black text-blue-600">{order.qtyTriples}T</span>
-                             <span className="font-black text-orange-600">{order.qtySimples}S</span>
+                 <div className="bg-slate-50 p-4 rounded-xl mb-4 space-y-3 border border-slate-100">
+                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">RETIRO: <b className="text-slate-900">{order.pickupBranch}</b></span>
+                        <div className="flex gap-4">
+                             <span className="font-black text-blue-600 text-lg">{order.qtyTriples}T</span>
+                             <span className="font-black text-orange-600 text-lg">{order.qtySimples}S</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <MapPin size={12} className="flex-shrink-0" /> <span className="truncate italic">{order.address || 'Sin dirección'}</span>
+                    
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-slate-800">
+                            <MapPin size={20} className="flex-shrink-0 text-orange-600" /> 
+                            <span className="font-black text-xl leading-tight uppercase">{order.address || 'SIN DIRECCIÓN'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-slate-900">
+                            <Phone size={20} className="flex-shrink-0 text-green-600" /> 
+                            <span className="font-black text-2xl tracking-tight">{order.phone || 'SIN TELÉFONO'}</span>
+                        </div>
                     </div>
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
+
+                    <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+                        <span className={`text-[11px] font-black px-3 py-1 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
                         <div className="flex items-center gap-1 font-black text-slate-700">
-                            <Package size={12} className="text-slate-400" /> {order.packageCount} bultos
+                            <Package size={14} className="text-slate-400" /> {order.packageCount} bultos
                         </div>
                     </div>
                  </div>
@@ -188,22 +197,22 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                  <div className="flex gap-3">
                     <button 
                         onClick={() => handlePrint(order)} 
-                        className="px-5 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 flex items-center justify-center shadow-sm" 
+                        className="px-6 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 flex items-center justify-center shadow-sm" 
                     >
-                        <Printer size={28} />
+                        <Printer size={32} />
                     </button>
                     {isDelivered ? (
-                         <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-black flex justify-center items-center gap-2 uppercase tracking-widest text-sm">DESPACHADO</button>
+                         <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-black flex justify-center items-center gap-2 uppercase tracking-widest text-sm">ENTREGADO CORRECTAMENTE</button>
                     ) : order.location ? (
                         <button 
                             onClick={() => executeDeliver(order.id)} 
                             disabled={processingId === order.id}
-                            className={`flex-1 py-4 rounded-xl font-black text-white transition-all shadow-md active:scale-[0.98] bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 uppercase tracking-widest text-sm`}
+                            className={`flex-1 py-4 rounded-xl font-black text-white transition-all shadow-md active:scale-[0.98] bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 uppercase tracking-widest text-base`}
                         >
-                          {processingId === order.id ? <Loader2 className="animate-spin" size={24} /> : <><PackageCheck size={24} /> ENTREGAR</>}
+                          {processingId === order.id ? <Loader2 className="animate-spin" size={28} /> : <><PackageCheck size={28} /> CONFIRMAR ENTREGA</>}
                         </button>
                     ) : (
-                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-4 rounded-xl font-black border border-slate-200 cursor-not-allowed uppercase text-[10px] tracking-widest">Pendiente Prod.</button>
+                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-4 rounded-xl font-black border border-slate-200 cursor-not-allowed uppercase text-[10px] tracking-widest">Esperando ubicación de fábrica...</button>
                     )}
                  </div>
                </div>
