@@ -1,9 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus, PaymentStatus } from '../types';
+import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
-import { PICKUP_BRANCHES } from '../constants';
-import { Search, Printer, CheckCircle, AlertCircle, Filter, Loader2, Clock, AlertTriangle, PackageCheck, MapPin, Phone, Package, Factory } from 'lucide-react';
+import { PICKUP_BRANCHES, PRODUCTION_BRANCHES, PICKUP_DATES } from '../constants';
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -11,43 +12,48 @@ interface DeliverTabProps {
 }
 
 export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) => {
+  const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBranch, setFilterBranch] = useState('');
+  const [filterFactory, setFilterFactory] = useState<string>('ALL');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Estados para la interacción de entrega
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const filteredOrders = useMemo(() => {
-    // 1. Start with all orders (do NOT filter out delivered ones)
-    let result = orders;
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshData();
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
-    // 2. Filter by Branch
+  const filteredOrders = useMemo(() => {
+    let result = orders.filter(o => o.pickupDate === selectedDate);
+
     if (filterBranch) {
       result = result.filter(o => o.pickupBranch === filterBranch);
     }
+    
+    if (filterFactory !== 'ALL') {
+      result = result.filter(o => o.originBranch === filterFactory);
+    }
 
-    // 3. Filter by Search Term
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       result = result.filter(o => 
         o.id.toLowerCase().includes(q) ||
         o.customerName.toLowerCase().includes(q) ||
         o.phone.includes(q) ||
-        o.address.toLowerCase().includes(q) // Added address search
+        o.address.toLowerCase().includes(q)
       );
     }
 
-    // 4. Sort: Active (Pending/Ready) first, Delivered last
     return result.sort((a, b) => {
-        // If status is different, prioritize non-delivered
         if (a.status === OrderStatus.DELIVERED && b.status !== OrderStatus.DELIVERED) return 1;
         if (a.status !== OrderStatus.DELIVERED && b.status === OrderStatus.DELIVERED) return -1;
-        
-        // If status is same group, sort by ID or Name
-        return a.customerName.localeCompare(b.customerName);
+        return (a.pickupTime || '').localeCompare(b.pickupTime || '');
     });
-  }, [orders, searchTerm, filterBranch]);
+  }, [orders, searchTerm, filterBranch, filterFactory, selectedDate]);
 
   const handlePrint = (order: Order) => {
     generateTicketPDF(order);
@@ -55,12 +61,9 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
 
   const handleDeliverClick = (orderId: string) => {
     if (confirmId === orderId) {
-      // Segundo clic: Confirmar
       executeDeliver(orderId);
     } else {
-      // Primer clic: Armar confirmación
       setConfirmId(orderId);
-      // Resetear confirmación si no confirma en 3 segundos
       setTimeout(() => setConfirmId(null), 3000);
     }
   };
@@ -69,238 +72,151 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     setProcessingId(id);
     try {
       await markOrderDelivered(id);
-      setSearchTerm(''); 
       refreshData();
     } catch (e) {
-      alert("Error de conexión al entregar");
+      alert("Error al marcar la entrega. Verifique su internet.");
     } finally {
       setProcessingId(null);
       setConfirmId(null);
     }
   };
 
-  const formatTime = (isoString: string | null) => {
-      if (!isoString) return '??:??';
-      return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   const getStatusHeader = (order: Order) => {
-      if (order.status === OrderStatus.DELIVERED) {
-          return {
-              color: 'bg-teal-700', 
-              text: `ENTREGADO A LAS ${formatTime(order.deliveredAt)}`
-          };
-      }
-      if (order.location) {
-          return {
-              color: 'bg-green-600',
-              text: `UBICACIÓN: ${order.location}`
-          };
-      }
-      return {
-          color: 'bg-red-500',
-          text: 'PENDIENTE DE ELABORACIÓN / SIN UBICACIÓN'
-      };
+      if (order.status === OrderStatus.DELIVERED) return { color: 'bg-teal-700', text: 'ENTREGADO' };
+      if (order.location) return { color: 'bg-green-600', text: `UBICACIÓN: ${order.location}` };
+      return { color: 'bg-red-500', text: 'SIN UBICACIÓN' };
   };
-
-  const getPaymentBadge = (status: PaymentStatus) => {
-      switch (status) {
-          case PaymentStatus.PAID: return <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded border border-green-200">PAGADO</span>;
-          case PaymentStatus.PARTIAL: return <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded border border-yellow-200">CON SEÑA</span>;
-          case PaymentStatus.UNPAID: return <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded border border-red-200">FALTA ABONAR</span>;
-          default: return null;
-      }
-  }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-       <div className="bg-orange-600 p-6 rounded-xl shadow-lg mb-6 text-white">
-         <h2 className="text-2xl font-bold mb-4">Entrega de Pedidos</h2>
+    <div className="max-w-4xl mx-auto p-4 pb-24">
+       <div className="bg-orange-600 p-6 rounded-2xl shadow-lg mb-6 text-white border-b-4 border-orange-700">
+         <div className="flex justify-between items-start mb-4">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+                <PackageCheck size={28} /> Entrega
+            </h2>
+            <button 
+                onClick={handleManualRefresh} 
+                className={`p-2.5 bg-white/20 rounded-full hover:bg-white/30 transition-all active:scale-90 ${isRefreshing ? 'animate-spin' : ''}`}
+                title="Actualizar Lista"
+            >
+                <RefreshCw size={24} />
+            </button>
+         </div>
          
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           {/* Search Input */}
-           <div className="md:col-span-2 relative">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+           <div className="lg:col-span-2 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input 
                 type="text"
-                className="w-full pl-12 p-3 rounded-lg text-slate-900 font-lg outline-none ring-2 ring-transparent focus:ring-orange-300 transition-all"
-                placeholder="Buscar por Dirección, Nombre, Tel o N°..."
+                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none shadow-inner border-none focus:ring-2 focus:ring-orange-300 transition-all"
+                placeholder="Nro, Nombre o Tel..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
            </div>
-
-           {/* Branch Filter */}
+           
            <div className="relative">
-             <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500" size={20} />
-             <select
-                className="w-full pl-12 p-3 rounded-lg text-slate-900 outline-none ring-2 ring-transparent focus:ring-orange-300 transition-all appearance-none"
-                value={filterBranch}
-                onChange={e => setFilterBranch(e.target.value)}
-             >
-               <option value="">Todas las Sucursales</option>
-               {PICKUP_BRANCHES.map(b => (
-                 <option key={b.value} value={b.value}>{b.label}</option>
-               ))}
-             </select>
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              <select 
+                className="w-full pl-9 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+              >
+                {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+           </div>
+
+           <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              <select
+                className="w-full pl-9 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer"
+                value={filterFactory}
+                onChange={e => setFilterFactory(e.target.value)}
+              >
+                <option value="ALL">Fábrica: Todas</option>
+                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
            </div>
          </div>
        </div>
 
        <div className="space-y-4">
-          {/* Empty State (No Search & No Filter) */}
-          {searchTerm === '' && filterBranch === '' && (
-             <div className="text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-               <Search size={48} className="mx-auto mb-4 opacity-20" />
-               <p>Utilice los filtros o el buscador para encontrar un pedido.</p>
+          {filteredOrders.length === 0 && (
+             <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
+               <Search size={40} className="opacity-20" />
+               <p className="font-medium text-slate-500">No hay pedidos para mostrar.</p>
+               <p className="text-xs px-8">Verifica el filtro de <b>Fecha</b> y <b>Fábrica</b>. Quizás el pedido está cargado para otro día.</p>
              </div>
           )}
 
-          {/* No Results State */}
-          {(searchTerm !== '' || filterBranch !== '') && filteredOrders.length === 0 && (
-             <div className="text-center py-12 text-slate-500 bg-white rounded-xl border border-slate-200">
-               <p>No se encontraron pedidos con ese criterio.</p>
-             </div>
-          )}
-
-          {/* List */}
           {filteredOrders.map(order => {
             const statusStyle = getStatusHeader(order);
             const isDelivered = order.status === OrderStatus.DELIVERED;
+            const isCentral = order.originBranch === ProductionBranch.CENTRAL;
             
-            // Factory Colors
-            const isCentral = order.originBranch === 'Central';
-            const factoryBadgeColor = isCentral 
-                ? 'bg-sky-50 text-sky-700 border-sky-100' 
-                : 'bg-purple-50 text-purple-700 border-purple-100';
-
             return (
-            <div key={order.id} className={`bg-white rounded-xl shadow-md overflow-hidden border ${isDelivered ? 'border-teal-200 bg-teal-50' : 'border-slate-200'} animate-fade-in`}>
-               <div className={`p-2 text-center text-white font-bold text-sm tracking-wider ${statusStyle.color}`}>
+            <div key={order.id} className={`bg-white rounded-2xl shadow-md overflow-hidden border transition-opacity ${isDelivered ? 'border-teal-200 opacity-70' : 'border-slate-200 hover:border-orange-200'}`}>
+               <div className={`p-2 text-center text-white font-bold text-[10px] tracking-[0.2em] uppercase ${statusStyle.color}`}>
                   {statusStyle.text}
                </div>
                
-               <div className="p-6">
+               <div className="p-5">
                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                         <h3 className="text-2xl font-bold text-slate-900">{order.customerName}</h3>
-                         {order.pickupTime && (
-                             <span className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">
-                                 <Clock size={12} /> {order.pickupTime}
-                             </span>
-                         )}
-                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 leading-tight">{order.customerName}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                          <p className="text-slate-500 font-mono">Comanda #{order.id}</p>
-                          {/* Factory Badge */}
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${factoryBadgeColor}`}>
-                                <Factory size={12} /> {order.originBranch}
+                          <span className="text-xs font-mono font-black text-slate-400">#{order.id}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
+                                <Factory size={10} /> {order.originBranch}
                           </span>
                       </div>
                     </div>
                     <div className="text-right">
-                       <p className="text-2xl font-black text-orange-600">
-                         {order.qtyTriples + order.qtySimples} u.
-                       </p>
-                       <p className="text-xs text-slate-400">Total Sándwiches</p>
+                       <p className="text-2xl font-black text-orange-600 leading-none">{order.qtyTriples + order.qtySimples}</p>
+                       <p className="text-[10px] font-bold text-slate-400 mb-1">UNIDADES</p>
+                       <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-lg font-bold shadow-sm">{order.pickupTime}</span>
                     </div>
                  </div>
 
-                 <div className="bg-slate-50 p-4 rounded mb-6">
-                    {/* Basic Details */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600 mb-3">
-                        <div>
-                           <span className="font-bold block text-xs uppercase text-slate-400">Detalle</span>
-                           <div className="flex gap-4">
-                             {order.qtyTriples > 0 && <span className="font-semibold text-slate-700">{order.qtyTriples} Triples</span>}
-                             {order.qtySimples > 0 && <span className="font-semibold text-slate-700">{order.qtySimples} Simples</span>}
-                           </div>
-                        </div>
-                        <div>
-                           <span className="font-bold block text-xs uppercase text-slate-400">Retira en</span>
-                           <span className="font-bold text-indigo-600">{order.pickupBranch}</span>
+                 <div className="bg-slate-50 p-3 rounded-xl mb-4 text-sm border border-slate-100">
+                    <div className="flex justify-between mb-2">
+                        <span className="text-slate-500">Retira: <b className="text-slate-900">{order.pickupBranch}</b></span>
+                        <div className="flex gap-3">
+                             <span className="font-bold text-blue-600">{order.qtyTriples} T</span>
+                             <span className="font-bold text-orange-600">{order.qtySimples} S</span>
                         </div>
                     </div>
-
-                    {/* Logistics Info (Address, Phone, Packages) */}
-                    <div className="border-t border-slate-200 pt-3 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="flex items-start gap-2">
-                            <MapPin size={16} className="text-slate-400 mt-0.5 shrink-0" />
-                            <span className="font-medium text-slate-700 break-words text-sm">{order.address || 'Sin Dirección'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Phone size={16} className="text-slate-400 shrink-0" />
-                            <span className="font-medium text-slate-700 text-sm">{order.phone || 'Sin Teléfono'}</span>
-                        </div>
-                        <div className="sm:col-span-2 flex items-center justify-between">
-                             <div className="flex items-center gap-2">
-                                 {getPaymentBadge(order.paymentStatus || PaymentStatus.UNPAID)}
-                                 {order.deposit > 0 && (
-                                     <span className="text-green-700 font-semibold text-xs">
-                                         (Seña: ${order.deposit})
-                                     </span>
-                                 )}
-                             </div>
-                             
-                             <div className="flex items-center gap-2 bg-white border border-slate-200 px-2 py-1 rounded">
-                                <Package size={16} className="text-orange-500" />
-                                <span className="font-bold text-slate-800 text-sm">{order.packageCount || 0} Bultos</span>
-                             </div>
+                    <div className="flex items-center gap-2 text-slate-600 mb-1 italic">
+                        <MapPin size={14} className="flex-shrink-0" /> <span className="truncate">{order.address || 'Sin dirección'}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
+                        <span className={`text-[10px] font-black px-2 py-1 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
+                        <div className="flex items-center gap-1 font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-100 shadow-sm">
+                            <Package size={14} className="text-slate-400" /> {order.packageCount} bultos
                         </div>
                     </div>
-
-                    {order.notes && (
-                       <div className="italic text-slate-500 border-t border-slate-200 pt-2 mt-3 text-sm">
-                         "{order.notes}"
-                       </div>
-                    )}
                  </div>
 
-                 <div className="flex flex-col sm:flex-row gap-3">
+                 <div className="flex gap-2">
                     <button 
-                      onClick={() => handlePrint(order)}
-                      className="flex-1 bg-slate-100 text-slate-800 py-3 rounded-lg font-bold hover:bg-slate-200 flex justify-center items-center gap-2 transition-colors"
+                        onClick={() => handlePrint(order)} 
+                        className="p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200" 
+                        title="Imprimir Ticket"
                     >
-                       <Printer size={20} />
-                       {isDelivered ? 'Re-Imprimir' : 'Imprimir Ticket'}
+                        <Printer size={24} />
                     </button>
-                    
                     {isDelivered ? (
-                         <button 
-                           disabled
-                           className="flex-1 bg-teal-600 text-white py-3 rounded-lg font-black flex justify-center items-center gap-2 cursor-default shadow-md border-2 border-teal-700"
-                         >
-                           <PackageCheck size={24} />
-                           ENTREGADO
-                         </button>
+                         <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-bold flex justify-center items-center gap-2 shadow-inner"><PackageCheck size={20} /> ENTREGADO</button>
                     ) : order.location ? (
                         <button 
-                          onClick={() => handleDeliverClick(order.id)}
-                          disabled={processingId === order.id}
-                          className={`flex-1 py-3 rounded-lg font-bold flex justify-center items-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-75 ${
-                            confirmId === order.id 
-                              ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' 
-                              : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200'
-                          }`}
+                            onClick={() => handleDeliverClick(order.id)} 
+                            disabled={processingId === order.id}
+                            className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.98] ${confirmId === order.id ? 'bg-red-600 animate-pulse' : 'bg-green-600 hover:bg-green-700'}`}
                         >
-                          {processingId === order.id ? (
-                            <Loader2 className="animate-spin" />
-                          ) : confirmId === order.id ? (
-                            <AlertTriangle size={20} />
-                          ) : (
-                            <CheckCircle size={20} />
-                          )}
-                          {confirmId === order.id ? '¿CONFIRMAR?' : 'Entregar Pedido'}
+                          {processingId === order.id ? <Loader2 className="animate-spin mx-auto" size={24} /> : confirmId === order.id ? '¿CONFIRMAR ENTREGA?' : 'MARCAR ENTREGA'}
                         </button>
                     ) : (
-                        <button 
-                          disabled
-                          className="flex-1 bg-slate-200 text-slate-400 py-3 rounded-lg font-bold flex justify-center items-center gap-2 cursor-not-allowed"
-                        >
-                          <AlertCircle size={20} />
-                          No Ubicado
-                        </button>
+                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-3 rounded-xl font-bold border border-slate-200 cursor-not-allowed">ESPERANDO PRODUCCIÓN</button>
                     )}
                  </div>
                </div>

@@ -1,30 +1,10 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Robust API Key retrieval for Vite/Vercel environments
-  let apiKey = '';
-  
-  try {
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_API_KEY) {
-      // @ts-ignore
-      apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    } 
-    // Fallback to process.env for other build systems or strict adherence
-    else if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      apiKey = process.env.API_KEY;
-    }
-  } catch (e) {
-    console.warn("Error accessing environment variables", e);
-  }
-
-  if (!apiKey) {
-    console.error("API Key is missing. Please configure VITE_GOOGLE_API_KEY in Vercel.");
-    return "Error: API Key no configurada en el servidor. Configure VITE_GOOGLE_API_KEY en Vercel.";
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Fix: Obtained API key exclusively from process.env.API_KEY as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   // Calculate Order Status Metrics
   const totalOrders = orders.length;
@@ -58,7 +38,7 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
   }).join('\n');
 
   let prompt = `
-    Act as a logistics manager for a sandwich factory using Gemini 2.5 Flash.
+    Act as a logistics manager for a sandwich factory using Gemini 3 Flash.
     **IMPORTANT: ALWAYS RESPOND IN SPANISH (Argentina).**
     
     Here is the current status for the date: ${date}.
@@ -92,10 +72,12 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
   }
 
   try {
+    // Fix: Used gemini-3-flash-preview as recommended for basic/summarization tasks
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
+    // Fix: Accessed .text property directly
     return response.text || "No analysis generated.";
   } catch (error) {
     console.error("Gemini API Error:", error);
