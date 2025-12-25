@@ -64,6 +64,8 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     setProcessingId(id);
     try {
       await markOrderDelivered(id);
+      // Limpiar búsqueda después de entregar exitosamente
+      setSearchTerm('');
       refreshData();
     } catch (e) {
       alert("Error al marcar la entrega. Verifique su internet.");

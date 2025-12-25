@@ -76,6 +76,8 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         delete newPkgInputs[id];
         setPackageInputs(newPkgInputs);
         
+        // Limpiar búsqueda después de ubicar exitosamente
+        setSearchTerm('');
         refreshData();
       } catch (e: any) {
         alert(e.message || "Error al guardar ubicación");
