@@ -33,7 +33,6 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   });
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
-  // Efecto para hacer desaparecer el mensaje automáticamente después de 5 segundos
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
@@ -148,30 +147,30 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   };
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
-      {/* Settings & Search Toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-4 max-w-[1400px] mx-auto">
+      {/* Settings & Search Toggle - Compacted */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button 
           onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
         >
-          <Settings size={18} className="text-orange-600" />
-          Fábrica Origen: {session.currentProductionBranch}
-          <ChevronDown size={14} />
+          <Settings size={14} className="text-orange-600" />
+          Fábrica: {session.currentProductionBranch}
+          <ChevronDown size={12} />
         </button>
         <button 
           onClick={() => { setShowSearchPanel(!showSearchPanel); setSearchResults([]); }}
-          className={`px-4 py-2 rounded-2xl font-bold text-sm flex items-center gap-2 transition-all ${showSearchPanel ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+          className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${showSearchPanel ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
         >
-          {showSearchPanel ? <ChevronUp size={16} /> : <Search size={16} />}
-          {showSearchPanel ? 'Ocultar Buscador' : 'Buscar / Editar comanda'}
+          {showSearchPanel ? <ChevronUp size={14} /> : <Search size={14} />}
+          {showSearchPanel ? 'Cerrar' : 'Buscar / Editar'}
         </button>
       </div>
 
       {isSettingsOpen && (
-        <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200 animate-fade-in flex flex-wrap gap-2">
+        <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 animate-fade-in flex flex-wrap gap-2">
           {PRODUCTION_BRANCHES.map(b => (
-            <button key={b.value} onClick={() => handleSettingsChange(b.value)} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${session.currentProductionBranch === b.value ? 'bg-orange-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>
+            <button key={b.value} onClick={() => handleSettingsChange(b.value)} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${session.currentProductionBranch === b.value ? 'bg-orange-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>
               {b.label}
             </button>
           ))}
@@ -179,63 +178,33 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       )}
 
       {showSearchPanel && (
-        <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-inner animate-fade-in">
-          <form onSubmit={handleSearchForEdit} className="flex gap-2 mb-6">
-            <input type="text" placeholder="Escriba Comanda, Nombre o Teléfono..." className="flex-1 p-4 rounded-2xl border border-blue-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none font-bold" value={searchId} onChange={e => setSearchId(e.target.value)} />
-            <button type="submit" disabled={isSearching} className="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-md font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors">
-              {isSearching ? <Loader2 className="animate-spin" size={20}/> : <Search size={20} />}
+        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-inner animate-fade-in">
+          <form onSubmit={handleSearchForEdit} className="flex gap-2 mb-4">
+            <input type="text" placeholder="Comanda, Nombre o Tel..." className="flex-1 p-2.5 rounded-xl border border-blue-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none font-bold" value={searchId} onChange={e => setSearchId(e.target.value)} />
+            <button type="submit" disabled={isSearching} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl shadow-md font-bold text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors">
+              {isSearching ? <Loader2 className="animate-spin" size={16}/> : <Search size={16} />}
               BUSCAR
             </button>
           </form>
 
           {searchResults.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
               {searchResults.map(r => (
-                <div key={r.id} className="bg-white rounded-2xl p-6 border border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between">
+                <div key={r.id} className="bg-white rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start mb-4 border-b border-slate-50 pb-3">
-                       <span className="font-black text-slate-900 text-5xl tracking-tighter">#{r.id}</span>
-                       <button onClick={() => loadOrderForEdit(r)} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm">
-                          <Edit3 size={16} /> EDITAR
+                    <div className="flex justify-between items-start mb-2 border-b border-slate-50 pb-2">
+                       <span className="font-black text-slate-900 text-2xl tracking-tighter">#{r.id}</span>
+                       <button onClick={() => loadOrderForEdit(r)} className="bg-blue-600 text-white px-3 py-1 rounded-lg font-black text-[10px] uppercase flex items-center gap-1 hover:bg-blue-700 transition-colors">
+                          <Edit3 size={12} /> EDITAR
                        </button>
                     </div>
-                    
-                    <h4 className="font-black text-slate-800 uppercase text-2xl mb-4 leading-tight">{r.customerName}</h4>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-2 text-sm mb-6">
-                       <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Calendar size={18} className="text-blue-500" /> {r.pickupDate}
-                       </div>
-                       <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Clock size={18} className="text-blue-500" /> {r.pickupTime}
-                       </div>
-                       <div className="flex items-center gap-2 text-slate-900 font-black text-lg sm:col-span-2">
-                          <Phone size={20} className="text-green-600" /> {r.phone || 'SIN TELÉFONO'}
-                       </div>
-                       <div className="flex items-start gap-2 text-slate-800 font-bold text-base sm:col-span-2 leading-snug">
-                          <MapPin size={20} className="text-orange-600 mt-1 flex-shrink-0" /> {r.address || 'SIN DIRECCIÓN'}
-                       </div>
-                       <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Package size={18} className="text-blue-500" /> {r.qtyTriples}T | {r.qtySimples}S
-                       </div>
-                       <div className="flex items-center gap-2 text-slate-500 font-bold">
-                          <Settings size={18} className="text-blue-500" /> {r.pickupBranch}
-                       </div>
-                       <div className="col-span-1 sm:col-span-2 flex items-center gap-2 mt-2">
-                          <DollarSign size={18} className="text-green-600" />
-                          <span className={`px-3 py-1 rounded-lg font-black uppercase text-xs border ${r.paymentStatus === PaymentStatus.PAID ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                             {r.paymentStatus} (${r.deposit} seña)
-                          </span>
-                       </div>
+                    <h4 className="font-black text-slate-800 uppercase text-sm mb-2 leading-tight truncate">{r.customerName}</h4>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] mb-2">
+                       <div className="flex items-center gap-1 text-slate-500 font-bold"><Calendar size={12} className="text-blue-500" /> {r.pickupDate}</div>
+                       <div className="flex items-center gap-1 text-slate-500 font-bold"><Clock size={12} className="text-blue-500" /> {r.pickupTime}</div>
+                       <div className="flex items-center gap-1 text-slate-900 font-black col-span-2"><Phone size={12} className="text-green-600" /> {r.phone || 'SIN TEL'}</div>
                     </div>
                   </div>
-
-                  {r.notes && (
-                    <div className="bg-slate-50 p-3 rounded-xl flex items-start gap-2 border border-slate-100 italic text-xs text-slate-600">
-                       <StickyNote size={14} className="flex-shrink-0 mt-0.5 text-slate-400" />
-                       <span className="line-clamp-3">{r.notes}</span>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -243,158 +212,105 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
       )}
 
-      {/* Main Form Section */}
-      <div className={`bg-white rounded-[2.5rem] p-8 shadow-md border transition-all ${isEditing ? 'ring-8 ring-blue-50 border-blue-300' : 'border-slate-100'}`}>
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-            <h2 className="text-3xl font-black text-slate-800 tracking-tighter flex items-center gap-3">
-                {isEditing ? <Edit3 className="text-blue-600" size={32} /> : <PlusCircle className="text-orange-600" size={32} />}
-                {isEditing ? `EDITANDO COMANDA #${originalId}` : 'NUEVA CARGA DE PEDIDO'}
+      {/* Main Form Section - Optimized for PC */}
+      <div className={`bg-white rounded-[1.5rem] p-5 shadow-sm border transition-all ${isEditing ? 'ring-4 ring-blue-50 border-blue-200' : 'border-slate-100'}`}>
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
+            <h2 className="text-xl font-black text-slate-800 tracking-tighter flex items-center gap-2">
+                {isEditing ? <Edit3 className="text-blue-600" size={24} /> : <PlusCircle className="text-orange-600" size={24} />}
+                {isEditing ? `EDITANDO #${originalId}` : 'NUEVA CARGA DE PEDIDO'}
             </h2>
             {isEditing && (
-              <div className="flex gap-3">
-                <button 
-                  onClick={handleDeleteOrder} 
-                  disabled={isSaving}
-                  className="bg-red-50 px-4 py-2 rounded-xl text-xs font-black text-red-600 uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-colors border border-red-100"
-                >
-                  <Trash2 size={18} /> Eliminar Comanda
+              <div className="flex gap-2">
+                <button onClick={handleDeleteOrder} disabled={isSaving} className="bg-red-50 px-3 py-1.5 rounded-lg text-[10px] font-black text-red-600 uppercase flex items-center gap-1 hover:bg-red-100 border border-red-100">
+                  <Trash2 size={14} /> Borrar
                 </button>
-                <button 
-                  onClick={handleCancelEdit} 
-                  className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors"
-                >
-                  <XCircle size={18} /> Cancelar edición
+                <button onClick={handleCancelEdit} className="bg-slate-100 px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 uppercase flex items-center gap-1 hover:bg-slate-200">
+                  <XCircle size={14} /> Cancelar
                 </button>
               </div>
             )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-10">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* SECCIÓN 1: DATOS DE LA COMANDA Y PERSONALES */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">1. Número de comanda</label>
-              <input id="comanda-id" type="text" required placeholder="Ej: 0542" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-orange-500 outline-none font-mono font-black text-2xl transition-all shadow-sm" value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value})} disabled={isSaving} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">1. Comanda</label>
+              <input id="comanda-id" type="text" required placeholder="0542" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-orange-500 outline-none font-mono font-black text-lg shadow-sm" value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value})} disabled={isSaving} />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">2. Fecha de retiro</label>
-              <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.pickupDate} onChange={e => setFormData({...formData, pickupDate: e.target.value as any})} disabled={isSaving}>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">2. Fecha</label>
+              <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm cursor-pointer" value={formData.pickupDate} onChange={e => setFormData({...formData, pickupDate: e.target.value as any})} disabled={isSaving}>
                 {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">3. Hora de retiro</label>
-              <input type="time" required className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">3. Hora</label>
+              <input type="time" required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
             </div>
 
-            <div className="hidden lg:block"></div>
-
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
-              <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
+              <input type="tel" placeholder="3816543210" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
             </div>
 
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
-              <input type="text" placeholder="Calle, Barrio, Manzana..." className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
+            <div className="space-y-1 lg:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
+              <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black uppercase text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
             </div>
 
-            <div className="space-y-2 lg:col-span-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">6. Teléfono</label>
-              <input type="tel" placeholder="3816543210" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} disabled={isSaving} />
+            <div className="space-y-1 lg:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">5. Dirección / Reparto</label>
+              <input type="text" placeholder="Calle, Barrio..." className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} disabled={isSaving} />
             </div>
 
-            <div className="space-y-2 lg:col-span-1">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">7. Sucursal de retiro</label>
-              <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
+            <div className="space-y-1 lg:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">7. Sucursal de retiro</label>
+              <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm cursor-pointer" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
                 {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
 
-            <div className="hidden lg:block lg:col-span-2"></div>
-          </div>
-
-          {/* SECCIÓN 2: CANTIDADES */}
-          <div className="space-y-6 pt-4">
-             <div className="flex items-center gap-3">
-                <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
-                <h3 className="text-slate-800 font-black uppercase text-sm tracking-widest">8. Cantidades de Sándwiches</h3>
-             </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 text-blue-600">Unid. Triples</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      placeholder="0" 
-                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl focus:bg-white focus:border-blue-500 outline-none transition-all shadow-sm text-center" 
-                      value={formData.qtyTriples || ''} 
-                      onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} 
-                      onFocus={e => e.target.select()} 
-                      onWheel={handleWheelDisable}
-                      disabled={isSaving} 
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 text-orange-600">Unid. Simples</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      placeholder="0" 
-                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm text-center" 
-                      value={formData.qtySimples || ''} 
-                      onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} 
-                      onFocus={e => e.target.select()} 
-                      onWheel={handleWheelDisable}
-                      disabled={isSaving} 
-                    />
-                </div>
-             </div>
-          </div>
-
-          {/* SECCIÓN 3: PAGO Y OBSERVACIONES */}
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Estado de Pago</label>
-                <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm cursor-pointer" value={formData.paymentStatus} onChange={e => setFormData({...formData, paymentStatus: e.target.value as PaymentStatus})} disabled={isSaving}>
-                  {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Monto de Seña ($)</label>
-                <input 
-                  type="number" 
-                  min="0" 
-                  step="100" 
-                  placeholder="0.00" 
-                  className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl text-green-700 focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" 
-                  value={depositInput === '0' ? '' : depositInput} 
-                  onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} 
-                  onWheel={handleWheelDisable}
-                  disabled={isSaving} 
-                />
-              </div>
+            {/* SECCIÓN 2: CANTIDADES - Integrada en el grid */}
+            <div className="space-y-1">
+                <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">8a. Triples</label>
+                <input type="number" min="0" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-lg focus:bg-white focus:border-blue-500 outline-none text-center shadow-sm" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} onWheel={handleWheelDisable} disabled={isSaving} />
+            </div>
+            <div className="space-y-1">
+                <label className="text-[10px] font-black text-orange-600 uppercase tracking-widest ml-1">8b. Simples</label>
+                <input type="number" min="0" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-lg focus:bg-white focus:border-orange-500 outline-none text-center shadow-sm" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} onWheel={handleWheelDisable} disabled={isSaving} />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Observaciones / Notas internas</label>
-              <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" rows={2} placeholder="Ej: Sin mayonesa, Cliente habitual..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
+            {/* SECCIÓN 3: PAGO Y OBSERVACIONES */}
+            <div className="space-y-1 lg:col-span-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">9. Pago</label>
+                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm cursor-pointer" value={formData.paymentStatus} onChange={e => setFormData({...formData, paymentStatus: e.target.value as PaymentStatus})} disabled={isSaving}>
+                  {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+            </div>
+            <div className="space-y-1 lg:col-span-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">10. Seña ($)</label>
+                <input type="number" min="0" step="100" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-lg text-green-700 focus:bg-white focus:border-orange-500 outline-none shadow-sm" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} onWheel={handleWheelDisable} disabled={isSaving} />
+            </div>
+
+            <div className="space-y-1 lg:col-span-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">11. Observaciones</label>
+              <textarea className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:bg-white focus:border-orange-500 outline-none shadow-sm resize-none" rows={1} placeholder="Notas..." value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})} disabled={isSaving} />
             </div>
           </div>
 
           {/* ACCIÓN DE GUARDADO */}
-          <div className="pt-2 flex flex-col items-center gap-4">
-             <button type="submit" disabled={isSaving} className={`w-full max-w-[240px] py-3 rounded-xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
-                {isSaving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
+          <div className="pt-2 flex flex-col items-center gap-2">
+             <button type="submit" disabled={isSaving} className={`w-full max-w-[200px] py-2.5 rounded-xl font-black text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                 {isSaving ? 'GUARDANDO...' : 'GUARDAR COMANDA'}
              </button>
 
              {message && (
-               <div className={`w-full max-w-md p-3 rounded-xl text-center font-black text-sm border-2 animate-fade-in flex items-center justify-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                 <AlertCircle size={18} />
+               <div className={`w-full max-w-sm p-2 rounded-lg text-center font-black text-[10px] border-2 animate-fade-in flex items-center justify-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                 <AlertCircle size={14} />
                  {message.text}
                </div>
              )}
