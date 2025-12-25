@@ -43,67 +43,58 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     document.body.removeChild(link);
   };
 
-  // Finanzas
-  const countPaid = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PAID).length;
-  const countPartial = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PARTIAL).length;
-  const countUnpaid = displayedOrders.filter(o => !o.paymentStatus || o.paymentStatus === PaymentStatus.UNPAID).length;
-
-  // Estadísticas por Sucursal de Retiro
-  const { branchStats, globalTotal } = useMemo(() => {
+  const { branchStats, globalTotal, finances } = useMemo(() => {
     const stats: Record<string, { t: number; s: number; prod: number; deliv: number }> = {};
     PICKUP_BRANCHES.forEach(b => { stats[b.label] = { t: 0, s: 0, prod: 0, deliv: 0 }; });
     
-    let gT = 0;
-    let gS = 0;
-    let gTotal = 0;
+    let gT = 0, gS = 0, gTotal = 0;
+    let fPaid = 0, fPartial = 0, fUnpaid = 0;
 
     displayedOrders.forEach(o => {
         const branchObj = PICKUP_BRANCHES.find(b => b.value === o.pickupBranch);
         const branchLabel = branchObj ? branchObj.label : o.pickupBranch;
         if (!stats[branchLabel]) stats[branchLabel] = { t: 0, s: 0, prod: 0, deliv: 0 };
         
-        const units = o.qtyTriples + o.qtySimples;
         stats[branchLabel].t += o.qtyTriples;
         stats[branchLabel].s += o.qtySimples;
-        
         gT += o.qtyTriples;
         gS += o.qtySimples;
-        gTotal += units;
+        gTotal += (o.qtyTriples + o.qtySimples);
 
-        if (o.location) stats[branchLabel].prod += units;
-        if (o.status === OrderStatus.DELIVERED) stats[branchLabel].deliv += units;
+        if (o.location) stats[branchLabel].prod += (o.qtyTriples + o.qtySimples);
+        if (o.status === OrderStatus.DELIVERED) stats[branchLabel].deliv += (o.qtyTriples + o.qtySimples);
+
+        if (o.paymentStatus === PaymentStatus.PAID) fPaid++;
+        else if (o.paymentStatus === PaymentStatus.PARTIAL) fPartial++;
+        else fUnpaid++;
     });
 
-    const bStats = Object.entries(stats)
-        .map(([name, data]) => {
-            const total = data.t + data.s;
-            return {
-                name,
-                triples: data.t,
-                simples: data.s,
-                total,
-                prodUnits: data.prod,
-                delivUnits: data.deliv,
-                prodPercent: total > 0 ? Math.round((data.prod / total) * 100) : 0,
-                delivPercent: total > 0 ? Math.round((data.deliv / total) * 100) : 0,
-            };
-        })
-        .sort((a, b) => b.total - a.total);
+    const bStats = Object.entries(stats).map(([name, data]) => {
+        const total = data.t + data.s;
+        return {
+            name,
+            triples: data.t,
+            simples: data.s,
+            total,
+            prodUnits: data.prod,
+            delivUnits: data.deliv,
+            prodPercent: total > 0 ? Math.round((data.prod / total) * 100) : 0,
+            delivPercent: total > 0 ? Math.round((data.deliv / total) * 100) : 0,
+        };
+    }).sort((a, b) => b.total - a.total);
 
     return { 
         branchStats: bStats, 
-        globalTotal: { name: 'TOTAL GENERAL', triples: gT, simples: gS, total: gTotal } 
+        globalTotal: { name: 'TOTAL GENERAL', triples: gT, simples: gS, total: gTotal },
+        finances: { paid: fPaid, partial: fPartial, unpaid: fUnpaid }
     };
   }, [displayedOrders]);
 
-  // Gráfico por Horario
   const hourlyChartData = useMemo(() => {
     const hourMap: Record<string, { hour: string; Triples: number; Simples: number }> = {};
     displayedOrders.forEach(o => {
-      const h = o.pickupTime.split(':')[0] + ':00';
-      if (!hourMap[h]) {
-        hourMap[h] = { hour: h, Triples: 0, Simples: 0 };
-      }
+      const h = (o.pickupTime || '00:00').split(':')[0] + ':00';
+      if (!hourMap[h]) hourMap[h] = { hour: h, Triples: 0, Simples: 0 };
       hourMap[h].Triples += o.qtyTriples;
       hourMap[h].Simples += o.qtySimples;
     });
@@ -112,14 +103,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
   const handleAiAnalysis = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (displayedOrders.length === 0) return;
+    if (displayedOrders.length === 0) {
+      setAiAnalysis("No hay datos cargados para analizar.");
+      return;
+    }
     setIsLoadingAi(true);
+    setAiAnalysis(null);
     const scopeName = selectedFactory === 'ALL' ? 'Total Global' : `Fábrica ${selectedFactory}`;
     try {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
-    } catch (err) {
-      setAiAnalysis("Error al conectar con la IA.");
+    } catch (err: any) {
+      setAiAnalysis(`Error crítico: ${err.message || 'No se pudo conectar.'}`);
     } finally {
       setIsLoadingAi(false);
     }
@@ -158,21 +153,21 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-5">
             <div className="bg-emerald-100 p-4 rounded-full text-emerald-600"><DollarSign size={28} strokeWidth={3} /></div>
-            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Pagados Total</p><p className="text-3xl font-black text-slate-800">{countPaid}</p></div>
+            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Pagados Total</p><p className="text-3xl font-black text-slate-800">{finances.paid}</p></div>
          </div>
          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-5">
             <div className="bg-amber-100 p-4 rounded-full text-amber-600"><DollarSign size={28} strokeWidth={3} /></div>
-            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Con Seña</p><p className="text-3xl font-black text-slate-800">{countPartial}</p></div>
+            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Con Seña</p><p className="text-3xl font-black text-slate-800">{finances.partial}</p></div>
          </div>
          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-5">
             <div className="bg-rose-100 p-4 rounded-full text-rose-600"><DollarSign size={28} strokeWidth={3} /></div>
-            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Falta Abonar</p><p className="text-3xl font-black text-slate-800">{countUnpaid}</p></div>
+            <div><p className="text-xs font-black text-slate-400 uppercase tracking-widest">Falta Abonar</p><p className="text-3xl font-black text-slate-800">{finances.unpaid}</p></div>
          </div>
       </div>
 
       {/* Carga por Sucursal */}
       <div className="mb-12">
-        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal de Retiro</h3>
+        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl ring-4 ring-orange-500/10 group hover:ring-orange-500 transition-all">
                 <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
@@ -287,7 +282,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
          </div>
 
-         {/* Panel IA con Campo de Texto Interactivo */}
+         {/* Panel IA */}
          <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
             <div className="p-8 bg-slate-800 border-b border-slate-700">
               <div className="flex items-center gap-3">
@@ -302,30 +297,30 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
             
             <div className="p-6 flex-1 flex flex-col gap-4 overflow-hidden">
-              {/* Área de respuesta */}
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50 text-slate-300 text-sm leading-relaxed font-medium min-h-[150px]">
-                {aiAnalysis ? (
-                  <div className="animate-fade-in">{aiAnalysis}</div>
+                {isLoadingAi ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500">
+                    <Loader2 className="animate-spin" size={32} />
+                    <p className="font-bold text-xs animate-pulse">Consultando a Gemini...</p>
+                  </div>
+                ) : aiAnalysis ? (
+                  <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
                 ) : (
                   <div className="text-slate-500 text-center py-6 italic flex flex-col items-center gap-3">
                     <MessageSquareQuote size={32} className="opacity-10" />
-                    Pregúntame algo sobre los pedidos del día o presiona "Analizar" para un resumen logístico.
+                    Preguntame algo sobre los pedidos del día.
                   </div>
                 )}
               </div>
 
-              {/* Input para preguntas del usuario */}
               <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tu consulta personalizada:</label>
                  <textarea 
                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl p-3 text-white text-sm focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold"
                    rows={2}
-                   placeholder="Ej: ¿Cuáles son los pedidos de más de 50 sándwiches?"
+                   placeholder="Ej: ¿Cómo vamos?"
                    value={customAiPrompt}
                    onChange={e => setCustomAiPrompt(e.target.value)}
-                   onKeyDown={e => {
-                     if (e.key === 'Enter' && e.ctrlKey) handleAiAnalysis();
-                   }}
                  />
               </div>
               
