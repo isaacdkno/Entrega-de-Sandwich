@@ -1,17 +1,14 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-// Added AlertTriangle to imports
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe, MessageSquareQuote, Key, AlertTriangle } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe, MessageSquareQuote, Key, AlertTriangle, Sigma } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
 }
-
-// Removed declare global for aistudio to avoid conflicts with existing types in the environment.
-// We use type assertions on window where needed instead.
 
 export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]); 
@@ -24,7 +21,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
   useEffect(() => {
     const checkKey = async () => {
-      // Cast to any to access aistudio property without typing conflicts
       const aistudio = (window as any).aistudio;
       if (aistudio) {
         const hasKey = await aistudio.hasSelectedApiKey();
@@ -35,7 +31,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   }, []);
 
   const handleSelectKey = async () => {
-    // Cast to any to access aistudio property without typing conflicts
     const aistudio = (window as any).aistudio;
     if (aistudio) {
       await aistudio.openSelectKey();
@@ -193,6 +188,37 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
+      {/* NUEVA POSICIÓN: Carga por Sucursal (con Total General) */}
+      <div className="mb-6">
+        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm">
+          <Store size={18} className="text-orange-600" /> Carga por Sucursal
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {/* Tarjeta de TOTAL GENERAL - Resaltada */}
+            <div className="bg-orange-600 p-3 rounded-xl shadow-lg border-2 border-orange-500 transform scale-105 sm:scale-100 z-10">
+              <div className="flex items-center gap-1 border-b border-white/30 pb-1 mb-2">
+                <Sigma size={12} className="text-white" />
+                <p className="text-[9px] font-black text-white uppercase truncate">TOTAL GENERAL</p>
+              </div>
+              <div className="flex justify-between items-end">
+                 <span className="text-2xl font-black text-white">{globalTotal.total}</span>
+                 <span className="text-[8px] font-bold text-orange-100 uppercase">Unid</span>
+              </div>
+            </div>
+
+            {/* Tarjetas de Sucursales */}
+            {branchStats.map(stat => (
+              <div key={stat.name} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <p className="text-[9px] font-black text-slate-400 uppercase mb-2 border-b pb-1 truncate">{stat.name}</p>
+                <div className="flex justify-between items-end">
+                   <span className="text-xl font-black text-slate-900">{stat.total}</span>
+                   <span className="text-[8px] font-bold text-slate-400 uppercase">Unid</span>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+
       {/* Gráfico Horario e Interacción IA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
          <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -274,22 +300,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
               </button>
             </div>
          </div>
-      </div>
-
-      {/* Carga por Sucursal */}
-      <div className="mb-6">
-        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm"><Store size={18} className="text-orange-600" /> Carga por Sucursal</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {branchStats.map(stat => (
-              <div key={stat.name} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[9px] font-black text-orange-600 uppercase mb-2 border-b pb-1 truncate">{stat.name}</p>
-                <div className="flex justify-between items-end">
-                   <span className="text-xl font-black text-slate-900">{stat.total}</span>
-                   <span className="text-[8px] font-bold text-slate-400 uppercase">Unid</span>
-                </div>
-              </div>
-            ))}
-        </div>
       </div>
 
       {/* Progreso Operativo */}
