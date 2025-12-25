@@ -163,7 +163,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                <div className="p-5">
                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 leading-tight">{order.customerName}</h3>
+                      <h3 className="text-xl font-bold text-slate-900 leading-tight uppercase">{order.customerName}</h3>
                       <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-mono font-black text-slate-400">#{order.id}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>

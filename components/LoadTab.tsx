@@ -24,7 +24,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const [depositInput, setDepositInput] = useState('0');
 
   const [formData, setFormData] = useState<Partial<Order>>({
-    pickupDate: '24/12/2025',
+    pickupDate: '31/12/2025',
     pickupTime: '',
     qtyTriples: 0,
     qtySimples: 0,
@@ -80,7 +80,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setSearchId('');
     setSearchResults([]);
     setFormData({
-        pickupDate: '24/12/2025', pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
+        pickupDate: '31/12/2025', pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
         paymentStatus: PaymentStatus.UNPAID, pickupBranch: PickupBranch.CENTRAL, id: '', customerName: '',
         address: '', phone: '', notes: ''
     });
@@ -218,17 +218,17 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 <input id="comanda-id" type="text" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-mono font-bold text-lg" value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
             </div>
             <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Día Retiro</label>
-                <select className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.pickupDate} onChange={e => setFormData({...formData, pickupDate: e.target.value as any})} disabled={isSaving}>
+                <select className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold" value={formData.pickupDate} onChange={e => setFormData({...formData, pickupDate: e.target.value as any})} disabled={isSaving}>
                 {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}</select>
             </div>
             <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Horario *</label>
-                <input type="time" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
+                <input type="time" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none font-bold" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
             </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Nombre y Apellido *</label>
-                  <input type="text" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} onKeyDown={handleKeyDown} disabled={isSaving} />
+                  <input type="text" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase font-bold" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} onKeyDown={handleKeyDown} disabled={isSaving} />
               </div>
               <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
                   <input type="text" className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />

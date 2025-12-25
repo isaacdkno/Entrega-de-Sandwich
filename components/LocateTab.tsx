@@ -29,28 +29,21 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
 
   const toggleMode = () => {
     setMode(prev => prev === 'locate' ? 'edit' : 'locate');
-    setSearchTerm(''); // Limpiar búsqueda al cambiar modo para evitar confusiones
+    setSearchTerm(''); 
   };
 
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
 
     return orders.filter(o => {
-        // 1. Filtrar por Fecha Seleccionada
         if (o.pickupDate !== selectedDate) return false;
-        
-        // 2. No mostrar pedidos ya entregados
         if (o.status === 'Entregado') return false;
-        
-        // 3. Filtro por Fábrica de Origen (Donde se cargó)
         if (filterFactory !== 'ALL' && o.originBranch !== filterFactory) return false;
 
-        // 4. Lógica de Modo: Ubicar (sin ubicación) vs Editar (con ubicación)
         const hasLoc = !!(o.location && o.location.trim() !== '');
         if (mode === 'locate' && hasLoc) return false;
         if (mode === 'edit' && !hasLoc) return false;
 
-        // 5. Buscador manual
         if (!q) return true;
         return (
             o.id.toLowerCase().includes(q) ||
@@ -73,7 +66,6 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         const allowOverwrite = mode === 'edit';
         await updateOrderLocation(id, rawLoc.toUpperCase(), parseInt(rawPkg) || 0, allowOverwrite);
         
-        // Limpiar estados locales tras el éxito
         const newLocInputs = { ...locationInputs };
         delete newLocInputs[id];
         setLocationInputs(newLocInputs);
@@ -113,7 +105,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
                         </span>
                         <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{order.pickupTime}</span>
                     </div>
-                    <h3 className="font-bold text-slate-800 leading-tight truncate max-w-[200px]">{order.customerName}</h3>
+                    <h3 className="font-bold text-slate-800 leading-tight truncate max-w-[200px] uppercase">{order.customerName}</h3>
                 </div>
                 <div className="text-right text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded">
                     {order.qtyTriples} T | {order.qtySimples} S

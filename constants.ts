@@ -1,6 +1,7 @@
+
 import { PickupBranch, ProductionBranch, PaymentStatus } from './types';
 
-export const PICKUP_DATES = ['24/12/2025', '31/12/2025'];
+export const PICKUP_DATES = ['31/12/2025', '24/12/2025'];
 
 export const PICKUP_BRANCHES = [
   { value: PickupBranch.CENTRAL, label: 'Central' },
