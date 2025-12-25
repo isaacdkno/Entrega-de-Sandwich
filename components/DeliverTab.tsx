@@ -19,7 +19,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -59,15 +58,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     generateTicketPDF(order);
   };
 
-  const handleDeliverClick = (orderId: string) => {
-    if (confirmId === orderId) {
-      executeDeliver(orderId);
-    } else {
-      setConfirmId(orderId);
-      setTimeout(() => setConfirmId(null), 3000);
-    }
-  };
-
   const executeDeliver = async (id: string) => {
     setProcessingId(id);
     try {
@@ -77,7 +67,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
       alert("Error al marcar la entrega. Verifique su internet.");
     } finally {
       setProcessingId(null);
-      setConfirmId(null);
     }
   };
 
@@ -197,26 +186,26 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                     </div>
                  </div>
 
-                 <div className="flex gap-2">
+                 <div className="flex gap-3">
                     <button 
                         onClick={() => handlePrint(order)} 
-                        className="p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200" 
+                        className="px-6 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200 flex items-center justify-center shadow-sm" 
                         title="Imprimir Ticket"
                     >
-                        <Printer size={24} />
+                        <Printer size={32} />
                     </button>
                     {isDelivered ? (
                          <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-bold flex justify-center items-center gap-2 shadow-inner"><PackageCheck size={20} /> ENTREGADO</button>
                     ) : order.location ? (
                         <button 
-                            onClick={() => handleDeliverClick(order.id)} 
+                            onClick={() => executeDeliver(order.id)} 
                             disabled={processingId === order.id}
-                            className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.98] ${confirmId === order.id ? 'bg-red-600 animate-pulse' : 'bg-green-600 hover:bg-green-700'}`}
+                            className={`flex-1 py-4 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.98] bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2`}
                         >
-                          {processingId === order.id ? <Loader2 className="animate-spin mx-auto" size={24} /> : confirmId === order.id ? '¿CONFIRMAR ENTREGA?' : 'MARCAR ENTREGA'}
+                          {processingId === order.id ? <Loader2 className="animate-spin" size={28} /> : <><PackageCheck size={24} /> MARCAR ENTREGA</>}
                         </button>
                     ) : (
-                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-3 rounded-xl font-bold border border-slate-200 cursor-not-allowed">ESPERANDO PRODUCCIÓN</button>
+                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-4 rounded-xl font-bold border border-slate-200 cursor-not-allowed">ESPERANDO PRODUCCIÓN</button>
                     )}
                  </div>
                </div>
