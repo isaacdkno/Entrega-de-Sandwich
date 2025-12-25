@@ -3,8 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Clock, Filter, Download, Send, DollarSign, Store, ClipboardList, CheckCircle2, AlertCircle, BarChart3, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, CheckCircle2 } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -77,20 +77,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const countPaid = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PAID).length;
   const countPartial = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PARTIAL).length;
   const countUnpaid = displayedOrders.filter(o => !o.paymentStatus || o.paymentStatus === PaymentStatus.UNPAID).length;
-
-  // Gráfico por Fábrica
-  const factoryChartData = useMemo(() => {
-    const branchMap: Record<string, { name: string; Triples: number; Simples: number }> = {};
-    displayedOrders.forEach(o => {
-      const branch = o.originBranch;
-      if (!branchMap[branch]) {
-        branchMap[branch] = { name: branch, Triples: 0, Simples: 0 };
-      }
-      branchMap[branch].Triples += o.qtyTriples;
-      branchMap[branch].Simples += o.qtySimples;
-    });
-    return Object.values(branchMap);
-  }, [displayedOrders]);
 
   // Gráfico por Horario (Carga Horaria)
   const hourlyChartData = useMemo(() => {
@@ -277,18 +263,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
          </div>
 
-         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3"><Store size={24} className="text-orange-600" /> Carga por Sucursal de Retiro</h3>
-            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
+            <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3"><Store size={24} className="text-orange-600" /> Carga por Sucursal de Retiro</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-2 gap-3 flex-1">
                {pickupStats.map(stat => (
-                 <div key={stat.name} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all group">
-                    <div>
-                       <p className="text-md font-black text-slate-800 group-hover:text-orange-600 transition-colors uppercase">{stat.name}</p>
-                       <p className="text-[10px] text-slate-400 font-black uppercase">Detalle: {stat.t}T / {stat.s}S</p>
+                 <div key={stat.name} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all group">
+                    <div className="mb-1 sm:mb-0">
+                       <p className="text-[11px] sm:text-xs font-black text-slate-800 group-hover:text-orange-600 transition-colors uppercase leading-none">{stat.name}</p>
+                       <p className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-tighter">{stat.t}T / {stat.s}S</p>
                     </div>
-                    <div className="text-right">
-                       <p className="text-2xl font-black text-slate-900">{stat.total}</p>
-                       <p className="text-[8px] font-black text-slate-400 uppercase">Unid. Totales</p>
+                    <div className="text-right flex items-baseline gap-1">
+                       <p className="text-lg sm:text-xl font-black text-slate-900 leading-none">{stat.total}</p>
+                       <p className="text-[7px] font-black text-slate-400 uppercase leading-none">U.</p>
                     </div>
                  </div>
                ))}
