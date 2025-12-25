@@ -126,7 +126,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       {/* Filtros */}
       <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4">
         <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            <BarChart3 className="text-orange-600" size={32} /> Estadísticas
+            <BarChart3 className="text-orange-600" size={32} /> Tablero de Estadísticas
         </h2>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
           <div className="relative w-full sm:w-auto">
@@ -166,28 +166,28 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* Carga por Sucursal */}
-      <div className="mb-10">
-        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal</h3>
+      {/* Carga por Sucursal (Debajo de finanzas con Total General) */}
+      <div className="mb-12">
+        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal de Retiro</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {/* Tarjeta de TOTAL GENERAL (Resaltada) */}
-            <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl ring-2 ring-orange-500/20 group hover:ring-orange-500 transition-all">
-                <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
-                    <Globe size={14} className="text-orange-500" />
-                    <p className="text-xs font-black text-white uppercase tracking-widest">TOTAL GENERAL</p>
+            <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl ring-4 ring-orange-500/10 group hover:ring-orange-500 transition-all">
+                <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <Globe size={18} className="text-orange-500" />
+                    <p className="text-[11px] font-black text-white uppercase tracking-[0.2em]">TOTAL GENERAL</p>
                 </div>
-                <div className="flex justify-between items-end mb-2">
-                   <span className="text-4xl font-black text-white">{globalTotal.total}</span>
+                <div className="flex justify-between items-end mb-4">
+                   <span className="text-5xl font-black text-white leading-none">{globalTotal.total}</span>
                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Global</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                   <div className="bg-blue-600/10 p-2 rounded-lg text-center border border-blue-500/20">
-                      <p className="text-[9px] font-black text-blue-400 uppercase mb-1">Triples</p>
-                      <p className="text-lg font-black text-blue-100">{globalTotal.triples}</p>
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="bg-blue-600/10 p-3 rounded-2xl text-center border border-blue-500/20">
+                      <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Triples</p>
+                      <p className="text-2xl font-black text-blue-100">{globalTotal.triples}</p>
                    </div>
-                   <div className="bg-orange-600/10 p-2 rounded-lg text-center border border-orange-500/20">
-                      <p className="text-[9px] font-black text-orange-400 uppercase mb-1">Simples</p>
-                      <p className="text-lg font-black text-orange-100">{globalTotal.simples}</p>
+                   <div className="bg-orange-600/10 p-3 rounded-2xl text-center border border-orange-500/20">
+                      <p className="text-[10px] font-black text-orange-400 uppercase mb-1">Simples</p>
+                      <p className="text-2xl font-black text-orange-100">{globalTotal.simples}</p>
                    </div>
                 </div>
             </div>
@@ -196,16 +196,16 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             {branchStats.map(stat => (
               <div key={stat.name} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <p className="text-xs font-black text-orange-600 uppercase mb-3 border-b pb-2">{stat.name}</p>
-                <div className="flex justify-between items-end mb-2">
+                <div className="flex justify-between items-end mb-3">
                    <span className="text-3xl font-black text-slate-900">{stat.total}</span>
-                   <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Sucursal</span>
+                   <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Total</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                   <div className="bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
+                   <div className="bg-blue-50 p-2 rounded-xl text-center border border-blue-100">
                       <p className="text-[9px] font-black text-blue-600 uppercase mb-1">Triples</p>
                       <p className="text-lg font-black text-blue-800">{stat.triples}</p>
                    </div>
-                   <div className="bg-orange-50 p-2 rounded-lg text-center border border-orange-100">
+                   <div className="bg-orange-50 p-2 rounded-xl text-center border border-orange-100">
                       <p className="text-[9px] font-black text-orange-600 uppercase mb-1">Simples</p>
                       <p className="text-lg font-black text-orange-800">{stat.simples}</p>
                    </div>
@@ -215,45 +215,55 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         </div>
       </div>
 
-      {/* Progreso por Sucursal de Retiro (Producción y Entrega) */}
+      {/* Progreso por Sucursal de Retiro (Producción y Entrega con Números Visibles) */}
       <div className="mb-12">
-        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><TrendingUp size={24} className="text-blue-600" /> Progreso de Operación por Sucursal</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><TrendingUp size={24} className="text-blue-600" /> Progreso de Operación (Preparación vs Entrega)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {branchStats.filter(s => s.total > 0).map(stat => (
-              <div key={stat.name} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                 <div className="flex justify-between items-center mb-6">
-                    <h4 className="font-black text-slate-800 uppercase text-lg tracking-tighter">{stat.name}</h4>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-500">{stat.total} UNID. ENCARGADAS</span>
+              <div key={stat.name} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                 <div className="flex justify-between items-center mb-8">
+                    <h4 className="font-black text-slate-800 uppercase text-xl tracking-tighter border-l-4 border-orange-600 pl-4">{stat.name}</h4>
+                    <span className="bg-slate-100 px-4 py-1.5 rounded-full text-[11px] font-black text-slate-600 uppercase tracking-widest">{stat.total} UNID. EN CARGA</span>
                  </div>
                  
                  {/* Barra de Producción */}
-                 <div className="mb-6">
-                    <div className="flex justify-between items-end mb-2">
+                 <div className="mb-10">
+                    <div className="flex justify-between items-end mb-3">
                        <div className="flex items-center gap-2">
-                          <CheckCircle2 size={16} className="text-blue-600" />
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Producción (Ubicados)</span>
+                          <CheckCircle2 size={18} className="text-blue-600" />
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Producción (Listos para retirar)</span>
                        </div>
-                       <span className="text-sm font-black text-blue-600">{stat.prodPercent}%</span>
+                       <span className="text-lg font-black text-blue-600">{stat.prodPercent}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
-                       <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: `${stat.prodPercent}%` }}></div>
+                    <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-slate-200">
+                       <div className="h-full bg-blue-600 rounded-full transition-all duration-1000 shadow-inner" style={{ width: `${stat.prodPercent}%` }}></div>
                     </div>
-                    <p className="text-[9px] font-bold text-slate-400 mt-1.5 uppercase text-right">{stat.prodUnits} de {stat.total} unidades listas</p>
+                    {/* Visualización de números resaltada */}
+                    <div className="mt-3 text-right">
+                       <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                          PREPARADOS: <span className="text-2xl text-blue-600 ml-1">{stat.prodUnits}</span> <span className="text-slate-400 mx-1">/</span> <span className="text-slate-500">{stat.total} UNID.</span>
+                       </p>
+                    </div>
                  </div>
 
-                 {/* Barra de Entrega */}
+                 {/* Barra de Entrega (Igual a producción, justo debajo) */}
                  <div>
-                    <div className="flex justify-between items-end mb-2">
+                    <div className="flex justify-between items-end mb-3">
                        <div className="flex items-center gap-2">
-                          <Truck size={16} className="text-emerald-600" />
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Entrega (Despachados)</span>
+                          <Truck size={18} className="text-emerald-600" />
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Entrega (Despachados al cliente)</span>
                        </div>
-                       <span className="text-sm font-black text-emerald-600">{stat.delivPercent}%</span>
+                       <span className="text-lg font-black text-emerald-600">{stat.delivPercent}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
-                       <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${stat.delivPercent}%` }}></div>
+                    <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-slate-200">
+                       <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-inner" style={{ width: `${stat.delivPercent}%` }}></div>
                     </div>
-                    <p className="text-[9px] font-bold text-slate-400 mt-1.5 uppercase text-right">{stat.delivUnits} de {stat.total} unidades entregadas</p>
+                    {/* Visualización de números resaltada */}
+                    <div className="mt-3 text-right">
+                       <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                          ENTREGADOS: <span className="text-2xl text-emerald-600 ml-1">{stat.delivUnits}</span> <span className="text-slate-400 mx-1">/</span> <span className="text-slate-500">{stat.total} UNID.</span>
+                       </p>
+                    </div>
                  </div>
               </div>
             ))}
@@ -263,7 +273,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       {/* Gráfico Horario y AI */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
          <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tighter"><Package size={24} className="text-blue-600" /> Distribución Horaria de Carga</h3>
+            <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tighter"><Package size={24} className="text-blue-600" /> Distribución Horaria de la Carga</h3>
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourlyChartData}>
@@ -281,32 +291,36 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
          {/* Mini AI Summary */}
          <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-6 bg-slate-800 border-b border-slate-700">
+            <div className="p-8 bg-slate-800 border-b border-slate-700">
               <div className="flex items-center gap-3">
-                 <div className="bg-orange-500 p-2 rounded-xl">
-                    <BrainCircuit className="text-white" size={24} />
+                 <div className="bg-orange-500 p-3 rounded-2xl shadow-lg shadow-orange-900/40">
+                    <BrainCircuit className="text-white" size={28} />
                  </div>
-                 <h4 className="text-white font-black uppercase text-sm tracking-widest">Asistente AI</h4>
+                 <div>
+                    <h4 className="text-white font-black uppercase text-sm tracking-widest leading-none mb-1">Asistente AI</h4>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Optimización Gemini</p>
+                 </div>
               </div>
             </div>
-            <div className="p-6 flex-1 flex flex-col justify-between">
+            <div className="p-8 flex-1 flex flex-col justify-between">
               {aiAnalysis ? (
-                <div className="text-slate-300 text-sm leading-relaxed mb-6 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <div className="text-slate-300 text-sm leading-relaxed mb-6 max-h-[300px] overflow-y-auto custom-scrollbar p-4 bg-slate-800/50 rounded-2xl border border-slate-700 font-medium">
                   {aiAnalysis}
                 </div>
               ) : (
-                <div className="text-slate-500 text-center py-10 italic text-sm">
-                  Toca analizar para obtener un resumen estratégico de la carga.
+                <div className="text-slate-500 text-center py-10 italic text-sm font-bold flex flex-col items-center gap-4">
+                  <RefreshCw size={40} className="opacity-20" />
+                  Toca el botón para analizar la carga y detectar cuellos de botella.
                 </div>
               )}
               
               <button 
                 onClick={() => handleAiAnalysis()}
                 disabled={isLoadingAi || displayedOrders.length === 0}
-                className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-3 disabled:opacity-30"
+                className="w-full bg-white text-slate-900 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-3 disabled:opacity-30 shadow-xl active:scale-95"
               >
                 {isLoadingAi ? <Loader2 className="animate-spin" size={20} /> : <RefreshCw size={20} />}
-                {isLoadingAi ? 'Analizando...' : 'Analizar Carga'}
+                {isLoadingAi ? 'ANALIZANDO DATOS...' : 'ANALIZAR CARGA DEL DÍA'}
               </button>
             </div>
          </div>
