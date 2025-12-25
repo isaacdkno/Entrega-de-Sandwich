@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe, MessageSquareQuote } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -48,7 +48,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const countPartial = displayedOrders.filter(o => o.paymentStatus === PaymentStatus.PARTIAL).length;
   const countUnpaid = displayedOrders.filter(o => !o.paymentStatus || o.paymentStatus === PaymentStatus.UNPAID).length;
 
-  // Estadísticas por Sucursal de Retiro (Carga y Progreso)
+  // Estadísticas por Sucursal de Retiro
   const { branchStats, globalTotal } = useMemo(() => {
     const stats: Record<string, { t: number; s: number; prod: number; deliv: number }> = {};
     PICKUP_BRANCHES.forEach(b => { stats[b.label] = { t: 0, s: 0, prod: 0, deliv: 0 }; });
@@ -70,9 +70,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         gS += o.qtySimples;
         gTotal += units;
 
-        // Si tiene ubicación, está producido
         if (o.location) stats[branchLabel].prod += units;
-        // Si está entregado
         if (o.status === OrderStatus.DELIVERED) stats[branchLabel].deliv += units;
     });
 
@@ -114,11 +112,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
   const handleAiAnalysis = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (displayedOrders.length === 0) return;
     setIsLoadingAi(true);
     const scopeName = selectedFactory === 'ALL' ? 'Total Global' : `Fábrica ${selectedFactory}`;
-    const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
-    setAiAnalysis(result);
-    setIsLoadingAi(false);
+    try {
+      const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
+      setAiAnalysis(result);
+    } catch (err) {
+      setAiAnalysis("Error al conectar con la IA.");
+    } finally {
+      setIsLoadingAi(false);
+    }
   };
 
   return (
@@ -166,11 +170,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* Carga por Sucursal (Debajo de finanzas con Total General) */}
+      {/* Carga por Sucursal */}
       <div className="mb-12">
         <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal de Retiro</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {/* Tarjeta de TOTAL GENERAL (Resaltada) */}
             <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl ring-4 ring-orange-500/10 group hover:ring-orange-500 transition-all">
                 <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
                     <Globe size={18} className="text-orange-500" />
@@ -192,7 +195,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 </div>
             </div>
 
-            {/* Tarjetas por Sucursal */}
             {branchStats.map(stat => (
               <div key={stat.name} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <p className="text-xs font-black text-orange-600 uppercase mb-3 border-b pb-2">{stat.name}</p>
@@ -215,9 +217,9 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         </div>
       </div>
 
-      {/* Progreso por Sucursal de Retiro (Producción y Entrega con Números Visibles) */}
+      {/* Progreso Operativo */}
       <div className="mb-12">
-        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><TrendingUp size={24} className="text-blue-600" /> Progreso de Operación (Preparación vs Entrega)</h3>
+        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><TrendingUp size={24} className="text-blue-600" /> Progreso de Operación</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {branchStats.filter(s => s.total > 0).map(stat => (
               <div key={stat.name} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
@@ -226,19 +228,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <span className="bg-slate-100 px-4 py-1.5 rounded-full text-[11px] font-black text-slate-600 uppercase tracking-widest">{stat.total} UNID. EN CARGA</span>
                  </div>
                  
-                 {/* Barra de Producción */}
                  <div className="mb-10">
                     <div className="flex justify-between items-end mb-3">
                        <div className="flex items-center gap-2">
                           <CheckCircle2 size={18} className="text-blue-600" />
-                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Producción (Listos para retirar)</span>
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Producción (Listos)</span>
                        </div>
                        <span className="text-lg font-black text-blue-600">{stat.prodPercent}%</span>
                     </div>
                     <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-slate-200">
                        <div className="h-full bg-blue-600 rounded-full transition-all duration-1000 shadow-inner" style={{ width: `${stat.prodPercent}%` }}></div>
                     </div>
-                    {/* Visualización de números resaltada */}
                     <div className="mt-3 text-right">
                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
                           PREPARADOS: <span className="text-2xl text-blue-600 ml-1">{stat.prodUnits}</span> <span className="text-slate-400 mx-1">/</span> <span className="text-slate-500">{stat.total} UNID.</span>
@@ -246,19 +246,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     </div>
                  </div>
 
-                 {/* Barra de Entrega (Igual a producción, justo debajo) */}
                  <div>
                     <div className="flex justify-between items-end mb-3">
                        <div className="flex items-center gap-2">
                           <Truck size={18} className="text-emerald-600" />
-                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Entrega (Despachados al cliente)</span>
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Entrega (Despachados)</span>
                        </div>
                        <span className="text-lg font-black text-emerald-600">{stat.delivPercent}%</span>
                     </div>
                     <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-slate-200">
                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-inner" style={{ width: `${stat.delivPercent}%` }}></div>
                     </div>
-                    {/* Visualización de números resaltada */}
                     <div className="mt-3 text-right">
                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
                           ENTREGADOS: <span className="text-2xl text-emerald-600 ml-1">{stat.delivUnits}</span> <span className="text-slate-400 mx-1">/</span> <span className="text-slate-500">{stat.total} UNID.</span>
@@ -270,10 +268,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         </div>
       </div>
 
-      {/* Gráfico Horario y AI */}
+      {/* Gráfico Horario e Interacción IA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
          <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tighter"><Package size={24} className="text-blue-600" /> Distribución Horaria de la Carga</h3>
+            <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tighter"><Package size={24} className="text-blue-600" /> Distribución Horaria</h3>
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourlyChartData}>
@@ -289,7 +287,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
          </div>
 
-         {/* Mini AI Summary */}
+         {/* Panel IA con Campo de Texto Interactivo */}
          <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
             <div className="p-8 bg-slate-800 border-b border-slate-700">
               <div className="flex items-center gap-3">
@@ -297,30 +295,47 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <BrainCircuit className="text-white" size={28} />
                  </div>
                  <div>
-                    <h4 className="text-white font-black uppercase text-sm tracking-widest leading-none mb-1">Asistente AI</h4>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Optimización Gemini</p>
+                    <h4 className="text-white font-black uppercase text-sm tracking-widest leading-none mb-1 text-orange-400">Asistente Gemini</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">IA Inteligente en tiempo real</p>
                  </div>
               </div>
             </div>
-            <div className="p-8 flex-1 flex flex-col justify-between">
-              {aiAnalysis ? (
-                <div className="text-slate-300 text-sm leading-relaxed mb-6 max-h-[300px] overflow-y-auto custom-scrollbar p-4 bg-slate-800/50 rounded-2xl border border-slate-700 font-medium">
-                  {aiAnalysis}
-                </div>
-              ) : (
-                <div className="text-slate-500 text-center py-10 italic text-sm font-bold flex flex-col items-center gap-4">
-                  <RefreshCw size={40} className="opacity-20" />
-                  Toca el botón para analizar la carga y detectar cuellos de botella.
-                </div>
-              )}
+            
+            <div className="p-6 flex-1 flex flex-col gap-4 overflow-hidden">
+              {/* Área de respuesta */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50 text-slate-300 text-sm leading-relaxed font-medium min-h-[150px]">
+                {aiAnalysis ? (
+                  <div className="animate-fade-in">{aiAnalysis}</div>
+                ) : (
+                  <div className="text-slate-500 text-center py-6 italic flex flex-col items-center gap-3">
+                    <MessageSquareQuote size={32} className="opacity-10" />
+                    Pregúntame algo sobre los pedidos del día o presiona "Analizar" para un resumen logístico.
+                  </div>
+                )}
+              </div>
+
+              {/* Input para preguntas del usuario */}
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tu consulta personalizada:</label>
+                 <textarea 
+                   className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl p-3 text-white text-sm focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold"
+                   rows={2}
+                   placeholder="Ej: ¿Cuáles son los pedidos de más de 50 sándwiches?"
+                   value={customAiPrompt}
+                   onChange={e => setCustomAiPrompt(e.target.value)}
+                   onKeyDown={e => {
+                     if (e.key === 'Enter' && e.ctrlKey) handleAiAnalysis();
+                   }}
+                 />
+              </div>
               
               <button 
                 onClick={() => handleAiAnalysis()}
                 disabled={isLoadingAi || displayedOrders.length === 0}
-                className="w-full bg-white text-slate-900 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-50 transition-all flex items-center justify-center gap-3 disabled:opacity-30 shadow-xl active:scale-95"
+                className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
               >
-                {isLoadingAi ? <Loader2 className="animate-spin" size={20} /> : <RefreshCw size={20} />}
-                {isLoadingAi ? 'ANALIZANDO DATOS...' : 'ANALIZAR CARGA DEL DÍA'}
+                {isLoadingAi ? <Loader2 className="animate-spin" size={18} /> : (customAiPrompt.trim() !== '' ? <Send size={18} /> : <RefreshCw size={18} />)}
+                {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR PREGUNTA' : 'ANALIZAR CARGA DEL DÍA')}
               </button>
             </div>
          </div>
