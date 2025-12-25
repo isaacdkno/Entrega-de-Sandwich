@@ -3,7 +3,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Sándwich Manager Pro</title>
     
     <!-- PWA Setup -->
@@ -16,15 +16,26 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Prevent pull-to-refresh on mobile to feel more like an app */
-      body {
-        overscroll-behavior-y: none;
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
       }
 
-      /* Scrollbar Personalizado y Visible */
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Prevención de zoom en iOS al enfocar inputs */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+
       .custom-scrollbar::-webkit-scrollbar {
         width: 8px;
-        display: block; /* Forzar visibilidad en algunos motores */
+        display: block;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
         background: #f1f5f9;
@@ -35,38 +46,20 @@
         border-radius: 10px;
         border: 2px solid #f1f5f9;
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #c2410c;
-      }
-      /* Para Firefox */
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: #ea580c #f1f5f9;
-      }
-
-      /* Ocultar flechas de inputs numéricos */
-      input::-webkit-outer-spin-button,
-      input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-      input[type=number] {
-        -moz-appearance: textfield;
+      
+      .bottom-nav-safe {
+        padding-bottom: var(--sab);
       }
 
       @media print {
-        body * {
-          visibility: hidden;
-        }
-        #printable-area, #printable-area * {
-          visibility: visible;
-        }
-        #printable-area {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-        }
+        body * { visibility: hidden; }
+        #printable-area, #printable-area * { visibility: visible; }
+        #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+      }
+
+      /* Animaciones suaves */
+      .tab-transition {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
     </style>
   <script type="importmap">
