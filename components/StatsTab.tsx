@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe, MessageSquareQuote, Key, AlertTriangle, Sigma } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -17,24 +17,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
-  const [hasApiKey, setHasApiKey] = useState<boolean>(!!process.env.API_KEY);
-
-  useEffect(() => {
-    const checkKey = async () => {
-      const aistudio = (window as any).aistudio;
-      if (aistudio) {
-        const hasKey = await aistudio.hasSelectedApiKey();
-        setHasApiKey(hasKey || !!process.env.API_KEY);
-      }
-    };
-    checkKey();
-  }, []);
 
   const handleSelectKey = async () => {
     const aistudio = (window as any).aistudio;
     if (aistudio) {
-      await aistudio.openSelectKey();
-      setHasApiKey(true);
+      try {
+        await aistudio.openSelectKey();
+      } catch (e) {
+        console.error("Error al abrir selector de llaves:", e);
+      }
+    } else {
+      alert("El configurador de Google no está disponible en este navegador.");
     }
   };
 
@@ -134,10 +127,15 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
     } catch (err: any) {
-      const errorMsg = err.message || 'No se pudo conectar.';
-      setAiAnalysis(`Error: ${errorMsg}`);
-      if (errorMsg.includes('API Key')) {
-        setHasApiKey(false);
+      const errorMsg = err.message || '';
+      console.error("AI Error:", err);
+      
+      // Regla de negocio: Si la entidad no se encuentra o hay error de API Key, abrir selector
+      if (errorMsg.includes("not found") || errorMsg.includes("API key") || errorMsg.includes("404")) {
+        setAiAnalysis("⚠️ Configuración requerida. Por favor, selecciona una API Key válida en la ventana que se abrirá.");
+        handleSelectKey();
+      } else {
+        setAiAnalysis(`Error: ${errorMsg || 'No se pudo conectar con la IA.'}`);
       }
     } finally {
       setIsLoadingAi(false);
@@ -188,13 +186,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* NUEVA POSICIÓN: Carga por Sucursal (con Total General) */}
+      {/* Carga por Sucursal */}
       <div className="mb-6">
         <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm">
           <Store size={18} className="text-orange-600" /> Carga por Sucursal
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            {/* Tarjeta de TOTAL GENERAL - Resaltada */}
             <div className="bg-orange-600 p-3 rounded-xl shadow-lg border-2 border-orange-500 transform scale-105 sm:scale-100 z-10">
               <div className="flex items-center gap-1 border-b border-white/30 pb-1 mb-2">
                 <Sigma size={12} className="text-white" />
@@ -205,8 +202,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                  <span className="text-[8px] font-bold text-orange-100 uppercase">Unid</span>
               </div>
             </div>
-
-            {/* Tarjetas de Sucursales */}
             {branchStats.map(stat => (
               <div key={stat.name} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <p className="text-[9px] font-black text-slate-400 uppercase mb-2 border-b pb-1 truncate">{stat.name}</p>
@@ -250,11 +245,9 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <p className="text-[9px] text-orange-400 font-bold uppercase tracking-widest">IA Inteligente</p>
                  </div>
               </div>
-              {!(hasApiKey) && (window as any).aistudio && (
-                <button onClick={handleSelectKey} className="bg-orange-600 hover:bg-orange-700 text-white p-1.5 rounded-lg transition-colors" title="Configurar API Key">
-                    <Key size={14} />
-                </button>
-              )}
+              <button onClick={handleSelectKey} className="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white p-2 rounded-lg transition-colors" title="Configurar Conexión">
+                <Key size={16} />
+              </button>
             </div>
             
             <div className="p-4 flex-1 flex flex-col gap-3 overflow-hidden">
@@ -262,20 +255,14 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 {isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
-                    <p className="font-bold text-[10px] animate-pulse uppercase">Consultando...</p>
+                    <p className="font-bold text-[10px] animate-pulse uppercase">Consultando datos...</p>
                   </div>
                 ) : aiAnalysis ? (
                   <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
-                ) : !hasApiKey ? (
-                  <div className="text-slate-400 text-center py-4 flex flex-col items-center gap-2">
-                    <AlertTriangle className="text-amber-500" size={24} />
-                    <p className="font-bold text-[10px] uppercase">Se requiere API Key</p>
-                    <button onClick={handleSelectKey} className="text-orange-500 font-black text-[9px] underline uppercase tracking-widest">Configurar Ahora</button>
-                  </div>
                 ) : (
                   <div className="text-slate-500 text-center py-4 italic flex flex-col items-center gap-2">
                     <MessageSquareQuote size={24} className="opacity-10" />
-                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para analizar</p>
+                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para analizar logística</p>
                   </div>
                 )}
               </div>
@@ -284,7 +271,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                  <textarea 
                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold"
                    rows={2}
-                   placeholder="Ej: ¿Cómo vamos?"
+                   placeholder="Ej: ¿A qué hora tenemos más carga?"
                    value={customAiPrompt}
                    onChange={e => setCustomAiPrompt(e.target.value)}
                  />
