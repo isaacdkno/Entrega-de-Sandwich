@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, PackageCheck, Truck, CheckCircle2, Package, Globe } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -49,10 +49,14 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const countUnpaid = displayedOrders.filter(o => !o.paymentStatus || o.paymentStatus === PaymentStatus.UNPAID).length;
 
   // Estadísticas por Sucursal de Retiro (Carga y Progreso)
-  const branchStats = useMemo(() => {
+  const { branchStats, globalTotal } = useMemo(() => {
     const stats: Record<string, { t: number; s: number; prod: number; deliv: number }> = {};
     PICKUP_BRANCHES.forEach(b => { stats[b.label] = { t: 0, s: 0, prod: 0, deliv: 0 }; });
     
+    let gT = 0;
+    let gS = 0;
+    let gTotal = 0;
+
     displayedOrders.forEach(o => {
         const branchObj = PICKUP_BRANCHES.find(b => b.value === o.pickupBranch);
         const branchLabel = branchObj ? branchObj.label : o.pickupBranch;
@@ -62,13 +66,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
         stats[branchLabel].t += o.qtyTriples;
         stats[branchLabel].s += o.qtySimples;
         
+        gT += o.qtyTriples;
+        gS += o.qtySimples;
+        gTotal += units;
+
         // Si tiene ubicación, está producido
         if (o.location) stats[branchLabel].prod += units;
         // Si está entregado
         if (o.status === OrderStatus.DELIVERED) stats[branchLabel].deliv += units;
     });
 
-    return Object.entries(stats)
+    const bStats = Object.entries(stats)
         .map(([name, data]) => {
             const total = data.t + data.s;
             return {
@@ -83,6 +91,11 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             };
         })
         .sort((a, b) => b.total - a.total);
+
+    return { 
+        branchStats: bStats, 
+        globalTotal: { name: 'TOTAL GENERAL', triples: gT, simples: gS, total: gTotal } 
+    };
   }, [displayedOrders]);
 
   // Gráfico por Horario
@@ -153,16 +166,39 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* Carga por Sucursal (Relocalizado debajo de finanzas) */}
+      {/* Carga por Sucursal */}
       <div className="mb-10">
         <h3 className="font-black text-slate-800 mb-6 flex items-center gap-3 uppercase tracking-tighter"><Store size={24} className="text-orange-600" /> Carga de Pedidos por Sucursal</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {/* Tarjeta de TOTAL GENERAL (Resaltada) */}
+            <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl ring-2 ring-orange-500/20 group hover:ring-orange-500 transition-all">
+                <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                    <Globe size={14} className="text-orange-500" />
+                    <p className="text-xs font-black text-white uppercase tracking-widest">TOTAL GENERAL</p>
+                </div>
+                <div className="flex justify-between items-end mb-2">
+                   <span className="text-4xl font-black text-white">{globalTotal.total}</span>
+                   <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Global</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                   <div className="bg-blue-600/10 p-2 rounded-lg text-center border border-blue-500/20">
+                      <p className="text-[9px] font-black text-blue-400 uppercase mb-1">Triples</p>
+                      <p className="text-lg font-black text-blue-100">{globalTotal.triples}</p>
+                   </div>
+                   <div className="bg-orange-600/10 p-2 rounded-lg text-center border border-orange-500/20">
+                      <p className="text-[9px] font-black text-orange-400 uppercase mb-1">Simples</p>
+                      <p className="text-lg font-black text-orange-100">{globalTotal.simples}</p>
+                   </div>
+                </div>
+            </div>
+
+            {/* Tarjetas por Sucursal */}
             {branchStats.map(stat => (
               <div key={stat.name} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <p className="text-xs font-black text-orange-600 uppercase mb-3 border-b pb-2">{stat.name}</p>
                 <div className="flex justify-between items-end mb-2">
                    <span className="text-3xl font-black text-slate-900">{stat.total}</span>
-                   <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Total</span>
+                   <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Unid. Sucursal</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                    <div className="bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
@@ -205,7 +241,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <p className="text-[9px] font-bold text-slate-400 mt-1.5 uppercase text-right">{stat.prodUnits} de {stat.total} unidades listas</p>
                  </div>
 
-                 {/* Barra de Entrega (Debajo de la de producción y con igual estilo) */}
+                 {/* Barra de Entrega */}
                  <div>
                     <div className="flex justify-between items-end mb-2">
                        <div className="flex items-center gap-2">
