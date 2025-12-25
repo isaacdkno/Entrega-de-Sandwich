@@ -227,19 +227,19 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Nombre y Apellido *</label>
-                <input type="text" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} onKeyDown={handleKeyDown} disabled={isSaving} />
-            </div>
-            <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-                <input type="tel" className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
-            </div>
-            <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Sucursal Retiro</label>
-                <select className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
-                {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}</select>
-            </div>
-            <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
-                <input type="text" className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
-            </div>
+              <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Nombre y Apellido *</label>
+                  <input type="text" required className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} onKeyDown={handleKeyDown} disabled={isSaving} />
+              </div>
+              <div className="md:col-span-2"><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+                  <input type="text" className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
+              </div>
+              <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                  <input type="tel" className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} onKeyDown={handleKeyDown} disabled={isSaving} />
+              </div>
+              <div><label className="label block text-xs font-bold text-slate-500 uppercase mb-1">Sucursal Retiro</label>
+                  <select className="input-field w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none" value={formData.pickupBranch} onChange={e => setFormData({...formData, pickupBranch: e.target.value as any})} disabled={isSaving}>
+                  {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}</select>
+              </div>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
