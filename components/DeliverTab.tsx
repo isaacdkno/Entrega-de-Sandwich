@@ -54,7 +54,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     });
   }, [orders, searchTerm, filterBranch, filterFactory, selectedDate]);
 
-  // Cálculos de progreso para la vista actual
   const { totalInView, deliveredInView, progressPercent } = useMemo(() => {
     const total = filteredOrders.length;
     const delivered = filteredOrders.filter(o => o.status === OrderStatus.DELIVERED).length;
@@ -89,28 +88,27 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
 
   return (
     <div className="max-w-4xl mx-auto p-4 pb-24">
-       {/* Header de Búsqueda y Filtros */}
+       {/* Header de Filtros */}
        <div className="bg-orange-600 p-6 rounded-2xl shadow-lg mb-4 text-white border-b-4 border-orange-700">
          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-                <PackageCheck size={28} /> Entrega
+            <h2 className="text-2xl font-black flex items-center gap-2 tracking-tighter uppercase">
+                <PackageCheck size={28} /> Despacho
             </h2>
             <button 
                 onClick={handleManualRefresh} 
                 className={`p-2.5 bg-white/20 rounded-full hover:bg-white/30 transition-all active:scale-90 ${isRefreshing ? 'animate-spin' : ''}`}
-                title="Actualizar Lista"
             >
                 <RefreshCw size={24} />
             </button>
          </div>
          
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
            <div className="lg:col-span-2 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input 
                 type="text"
-                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none shadow-inner border-none focus:ring-2 focus:ring-orange-300 transition-all"
-                placeholder="Nro, Nombre o Tel..."
+                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none shadow-inner font-bold text-sm"
+                placeholder="Buscar comanda..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -141,18 +139,18 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
          </div>
        </div>
 
-       {/* Barra de Progreso de Entregas (Mini) */}
+       {/* Barra de Progreso Compacta */}
        {totalInView > 0 && (
-         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-6 sticky top-[100px] z-40 flex items-center gap-4 animate-fade-in">
-            <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
-               <Truck size={20} strokeWidth={2.5} />
+         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-4 animate-fade-in sticky top-[10px] z-40 sm:relative sm:top-0">
+            <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600">
+               <Truck size={20} />
             </div>
             <div className="flex-1">
-               <div className="flex justify-between items-end mb-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progreso de Despacho</span>
+               <div className="flex justify-between items-end mb-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progreso de Despacho Actual</span>
                   <span className="text-xs font-black text-emerald-600">{deliveredInView} / {totalInView}</span>
                </div>
-               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200 shadow-inner">
+               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                   <div className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }}></div>
                </div>
             </div>
@@ -163,9 +161,8 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
        <div className="space-y-4">
           {filteredOrders.length === 0 && (
              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
-               <Search size={40} className="opacity-20" />
-               <p className="font-medium text-slate-500">No hay pedidos para mostrar.</p>
-               <p className="text-xs px-8">Verifica el filtro de <b>Fecha</b> y <b>Fábrica</b>.</p>
+               <PackageCheck size={40} className="opacity-10" />
+               <p className="font-bold text-slate-500 uppercase text-xs tracking-widest">Sin resultados</p>
              </div>
           )}
 
@@ -175,44 +172,44 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
             const isCentral = order.originBranch === ProductionBranch.CENTRAL;
             
             return (
-            <div key={order.id} className={`bg-white rounded-2xl shadow-md overflow-hidden border transition-opacity ${isDelivered ? 'border-teal-200 opacity-70' : 'border-slate-200 hover:border-orange-200'}`}>
-               <div className={`p-2 text-center text-white font-bold text-[10px] tracking-[0.2em] uppercase ${statusStyle.color}`}>
+            <div key={order.id} className={`bg-white rounded-2xl shadow-md overflow-hidden border transition-all ${isDelivered ? 'border-teal-100 opacity-60' : 'border-slate-200'}`}>
+               <div className={`p-2 text-center text-white font-black text-[10px] tracking-[0.2em] uppercase ${statusStyle.color}`}>
                   {statusStyle.text}
                </div>
                
                <div className="p-5">
                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 leading-tight uppercase">{order.customerName}</h3>
+                      <h3 className="text-xl font-black text-slate-900 leading-tight uppercase tracking-tighter">{order.customerName}</h3>
                       <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-mono font-black text-slate-400">#{order.id}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border uppercase flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
                                 <Factory size={10} /> {order.originBranch}
                           </span>
                       </div>
                     </div>
                     <div className="text-right">
                        <p className="text-2xl font-black text-orange-600 leading-none">{order.qtyTriples + order.qtySimples}</p>
-                       <p className="text-[10px] font-bold text-slate-400 mb-1">UNIDADES</p>
-                       <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-lg font-bold shadow-sm">{order.pickupTime}</span>
+                       <p className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">Unidades</p>
+                       <span className="text-[10px] bg-blue-600 text-white px-2 py-1 rounded-lg font-black shadow-sm uppercase">{order.pickupTime}</span>
                     </div>
                  </div>
 
-                 <div className="bg-slate-50 p-3 rounded-xl mb-4 text-sm border border-slate-100">
+                 <div className="bg-slate-50 p-3 rounded-xl mb-4 text-xs border border-slate-100">
                     <div className="flex justify-between mb-2">
-                        <span className="text-slate-500">Retira: <b className="text-slate-900">{order.pickupBranch}</b></span>
+                        <span className="text-slate-500 font-bold">RETIRO: <b className="text-slate-900">{order.pickupBranch}</b></span>
                         <div className="flex gap-3">
-                             <span className="font-bold text-blue-600">{order.qtyTriples} T</span>
-                             <span className="font-bold text-orange-600">{order.qtySimples} S</span>
+                             <span className="font-black text-blue-600">{order.qtyTriples}T</span>
+                             <span className="font-black text-orange-600">{order.qtySimples}S</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600 mb-1 italic">
-                        <MapPin size={14} className="flex-shrink-0" /> <span className="truncate">{order.address || 'Sin dirección'}</span>
+                    <div className="flex items-center gap-2 text-slate-600 mb-1">
+                        <MapPin size={12} className="flex-shrink-0" /> <span className="truncate italic">{order.address || 'Sin dirección'}</span>
                     </div>
                     <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
-                        <div className="flex items-center gap-1 font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-100 shadow-sm">
-                            <Package size={14} className="text-slate-400" /> {order.packageCount} bultos
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
+                        <div className="flex items-center gap-1 font-black text-slate-700">
+                            <Package size={12} className="text-slate-400" /> {order.packageCount} bultos
                         </div>
                     </div>
                  </div>
@@ -220,23 +217,22 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                  <div className="flex gap-3">
                     <button 
                         onClick={() => handlePrint(order)} 
-                        className="px-6 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200 flex items-center justify-center shadow-sm" 
-                        title="Imprimir Ticket"
+                        className="px-5 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 flex items-center justify-center shadow-sm" 
                     >
-                        <Printer size={32} />
+                        <Printer size={28} />
                     </button>
                     {isDelivered ? (
-                         <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-bold flex justify-center items-center gap-2 shadow-inner"><PackageCheck size={20} /> ENTREGADO</button>
+                         <button disabled className="flex-1 bg-teal-600 text-white rounded-xl font-black flex justify-center items-center gap-2 uppercase tracking-widest text-sm">DESPACHADO</button>
                     ) : order.location ? (
                         <button 
                             onClick={() => executeDeliver(order.id)} 
                             disabled={processingId === order.id}
-                            className={`flex-1 py-4 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.98] bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2`}
+                            className={`flex-1 py-4 rounded-xl font-black text-white transition-all shadow-md active:scale-[0.98] bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 uppercase tracking-widest text-sm`}
                         >
-                          {processingId === order.id ? <Loader2 className="animate-spin" size={28} /> : <><PackageCheck size={24} /> MARCAR ENTREGA</>}
+                          {processingId === order.id ? <Loader2 className="animate-spin" size={24} /> : <><PackageCheck size={24} /> ENTREGAR</>}
                         </button>
                     ) : (
-                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-4 rounded-xl font-bold border border-slate-200 cursor-not-allowed">ESPERANDO PRODUCCIÓN</button>
+                        <button disabled className="flex-1 bg-slate-100 text-slate-300 py-4 rounded-xl font-black border border-slate-200 cursor-not-allowed uppercase text-[10px] tracking-widest">Pendiente Prod.</button>
                     )}
                  </div>
                </div>
