@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
-import { saveOrder, deleteOrder, searchOrders } from '../services/storageService';
-import { Save, Settings, Loader2, Search, Trash2, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { saveOrder, searchOrders } from '../services/storageService';
+import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle } from 'lucide-react';
 
 interface LoadTabProps {
   session: UserSession;
@@ -77,6 +77,10 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setMessage(null);
   };
 
+  const handleWheelDisable = (e: React.WheelEvent<HTMLInputElement>) => {
+    (e.target as HTMLInputElement).blur();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.id || !formData.customerName || !formData.pickupTime) {
@@ -117,14 +121,14 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
-      {/* Header & Settings */}
+      {/* Settings & Search Toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button 
           onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
           className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <Settings size={18} className="text-orange-600" />
-          Fábrica: {session.currentProductionBranch}
+          Fábrica Origen: {session.currentProductionBranch}
           <ChevronDown size={14} />
         </button>
         <button 
@@ -171,7 +175,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
       )}
 
-      {/* Formulario Principal Optimizado para PC */}
+      {/* Main Form Section */}
       <div className={`bg-white rounded-[2.5rem] p-8 shadow-md border transition-all ${isEditing ? 'ring-8 ring-blue-50 border-blue-300' : 'border-slate-100'}`}>
         <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-black text-slate-800 tracking-tighter flex items-center gap-3">
@@ -186,7 +190,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* SECCIÓN 1: DATOS DE LA COMANDA (ORDEN SOLICITADO) */}
+          {/* SECCIÓN 1: DATOS PERSONALES Y DE RETIRO */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
             {/* 1. Número de comanda */}
             <div className="space-y-2">
@@ -208,8 +212,8 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <input type="time" required className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-xl focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
             </div>
 
-            {/* 4. Nombre Completo */}
-            <div className="space-y-2">
+            {/* 4. Nombre Completo (Optimizado: Ocupa 2 columnas en PC para ser más visible) */}
+            <div className="space-y-2 lg:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">4. Nombre Completo</label>
               <input type="text" required placeholder="JUAN PÉREZ" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black uppercase text-lg focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={formData.customerName || ''} onChange={e => setFormData({...formData, customerName: e.target.value.toUpperCase()})} disabled={isSaving} />
             </div>
@@ -235,7 +239,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* SECCIÓN 2: CANTIDADES (ORDEN 8) */}
+          {/* SECCIÓN 2: CANTIDADES (Protección contra rueda del ratón) */}
           <div className="bg-slate-900 p-8 rounded-[2rem] border-b-8 border-slate-800 shadow-xl">
              <div className="flex items-center gap-3 mb-6">
                 <div className="bg-orange-600 p-2 rounded-xl text-white"><PlusCircle size={20} /></div>
@@ -245,13 +249,33 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
                 <div className="flex items-center gap-6 bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
                     <div className="flex-1">
                         <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">Unid. Triples</label>
-                        <input type="number" min="0" placeholder="0" className="w-full bg-slate-900 p-4 text-5xl font-black text-blue-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-blue-500 outline-none transition-all" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} disabled={isSaving} />
+                        <input 
+                          type="number" 
+                          min="0" 
+                          placeholder="0" 
+                          className="w-full bg-slate-900 p-4 text-5xl font-black text-blue-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-blue-500 outline-none transition-all" 
+                          value={formData.qtyTriples || ''} 
+                          onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} 
+                          onFocus={e => e.target.select()} 
+                          onWheel={handleWheelDisable}
+                          disabled={isSaving} 
+                        />
                     </div>
                 </div>
                 <div className="flex items-center gap-6 bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
                     <div className="flex-1">
                         <label className="text-[10px] font-black text-orange-400 uppercase tracking-widest block mb-2">Unid. Simples</label>
-                        <input type="number" min="0" placeholder="0" className="w-full bg-slate-900 p-4 text-5xl font-black text-orange-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-orange-500 outline-none transition-all" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} disabled={isSaving} />
+                        <input 
+                          type="number" 
+                          min="0" 
+                          placeholder="0" 
+                          className="w-full bg-slate-900 p-4 text-5xl font-black text-orange-500 border-2 border-slate-700 rounded-2xl text-center shadow-inner focus:border-orange-500 outline-none transition-all" 
+                          value={formData.qtySimples || ''} 
+                          onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} 
+                          onFocus={e => e.target.select()} 
+                          onWheel={handleWheelDisable}
+                          disabled={isSaving} 
+                        />
                     </div>
                 </div>
              </div>
@@ -267,7 +291,17 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Monto de Seña ($)</label>
-              <input type="number" min="0" step="100" placeholder="0.00" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl text-green-700 focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} disabled={isSaving} />
+              <input 
+                type="number" 
+                min="0" 
+                step="100" 
+                placeholder="0.00" 
+                className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-2xl text-green-700 focus:bg-white focus:border-orange-500 outline-none transition-all shadow-sm" 
+                value={depositInput === '0' ? '' : depositInput} 
+                onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} 
+                onWheel={handleWheelDisable}
+                disabled={isSaving} 
+              />
             </div>
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Observaciones / Notas internas</label>
@@ -275,16 +309,16 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* BOTÓN DE ACCIÓN FINAL */}
-          <div className="pt-6 space-y-4">
-             <button type="submit" disabled={isSaving} className={`w-full py-6 rounded-[2rem] font-black text-2xl shadow-2xl transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
-                {isSaving ? <Loader2 className="animate-spin" size={32} /> : <Save size={32} />}
-                {isSaving ? 'PROCESANDO REGISTRO...' : (isEditing ? 'GUARDAR CAMBIOS EN COMANDA' : 'REGISTRAR PEDIDO FINAL')}
+          {/* ACCIÓN DE GUARDADO (Optimizado: Menos altura, texto claro) */}
+          <div className="pt-4 space-y-4">
+             <button type="submit" disabled={isSaving} className={`w-full py-4 rounded-[1.5rem] font-black text-xl shadow-xl transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+                {isSaving ? <Loader2 className="animate-spin" size={28} /> : <Save size={28} />}
+                {isSaving ? 'GUARDANDO...' : 'GUARDAR COMANDA'}
              </button>
 
              {message && (
-               <div className={`p-5 rounded-[2rem] text-center font-black text-lg border-2 animate-bounce flex items-center justify-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                 <AlertCircle size={24} />
+               <div className={`p-4 rounded-[1.5rem] text-center font-black text-base border-2 animate-fade-in flex items-center justify-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                 <AlertCircle size={20} />
                  {message.text}
                </div>
              )}
