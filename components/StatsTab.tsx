@@ -220,25 +220,25 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyChartData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={hourlyChartData} margin={{ top: 35, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
                   <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', fontSize: '10px'}} />
-                  <Legend iconType="circle" wrapperStyle={{paddingTop: '10px', fontSize: '10px'}} />
+                  <Legend iconType="circle" wrapperStyle={{paddingTop: '15px', fontSize: '10px'}} />
                   
                   {chartMetric === 'units' ? (
                     <>
-                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#1e40af' }} />
+                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={25}>
+                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '13px', fontWeight: '900', fill: '#1e40af' }} />
                       </Bar>
-                      <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#9a3412' }} />
+                      <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[6, 6, 0, 0]} barSize={25}>
+                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '13px', fontWeight: '900', fill: '#9a3412' }} />
                       </Bar>
                     </>
                   ) : (
-                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={40}>
-                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '12px', fontWeight: '900', fill: '#0f172a' }} />
+                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={50}>
+                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '14px', fontWeight: '900', fill: '#0f172a' }} />
                     </Bar>
                   )}
                 </BarChart>
@@ -246,7 +246,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
          </div>
 
-         {/* Panel IA RESTRUCTURADO - Sin bloqueos */}
+         {/* Panel IA */}
          <div className="bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col min-h-[400px]">
             <div className="p-5 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -265,7 +265,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 {isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
-                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Consultando logística...</p>
+                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Analizando datos...</p>
                   </div>
                 ) : aiAnalysis ? (
                   <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
@@ -276,7 +276,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                        <span className="text-[9px] font-black uppercase tracking-widest">IA Lista</span>
                     </div>
                     <MessageSquareQuote size={24} className="opacity-10" />
-                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para analizar hoy</p>
+                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para el análisis diario</p>
                   </div>
                 )}
               </div>
@@ -285,7 +285,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   <textarea 
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold shadow-inner"
                     rows={2}
-                    placeholder="Ej: ¿Cómo vamos con la producción?"
+                    placeholder="Pregunta algo sobre los pedidos..."
                     value={customAiPrompt}
                     onChange={e => setCustomAiPrompt(e.target.value)}
                   />
@@ -297,7 +297,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
               >
                 {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
-                {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR PREGUNTA' : 'ANALIZAR HOY')}
+                {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'CONSULTAR IA' : 'ANÁLISIS RÁPIDO')}
               </button>
             </div>
          </div>

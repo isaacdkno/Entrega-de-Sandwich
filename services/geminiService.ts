@@ -4,28 +4,29 @@ import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
   // Inicialización directa. 
-  // Si la API_KEY no está en el entorno, el SDK lanzará el error que capturaremos abajo.
   const apiKey = process.env.API_KEY || "";
   const ai = new GoogleGenAI({ apiKey });
 
-  // Preparación de datos simplificada para el prompt
-  const stats = {
-    total: orders.length,
-    triples: orders.reduce((acc, o) => acc + o.qtyTriples, 0),
-    simples: orders.reduce((acc, o) => acc + o.qtySimples, 0),
-    listos: orders.filter(o => o.location).length
-  };
+  // Preparación de datos métricos detallados
+  const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
+  const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
+  const totalUnits = totalTriples + totalSimples;
+  const readyPercent = orders.length > 0 
+    ? Math.round((orders.filter(o => o.location).length / orders.length) * 100) 
+    : 0;
 
   const prompt = `
-    Como experto en logística de una sandwichería, analiza estos datos para el ${date} (Sector: ${scope}):
-    - Total Pedidos: ${stats.total}
-    - Triples: ${stats.triples}
-    - Simples: ${stats.simples}
-    - Ya ubicados/listos: ${stats.listos}
+    SOS UN EXPERTO LOGÍSTICO EN UNA SANDWICHERÍA DE ALTO VOLUMEN.
+    Analiza estos datos para el día ${date} (Sector: ${scope}):
     
-    Pregunta o instrucción específica: "${customInstruction || 'Dame un resumen rápido de la situación y consejos de producción.'}"
+    - TOTAL COMANDAS: ${orders.length}
+    - TOTAL UNIDADES: ${totalUnits} sándwiches.
+    - DETALLE: ${totalTriples} Triples y ${totalSimples} Simples.
+    - PROGRESO: ${readyPercent}% de los pedidos ya están ubicados y listos.
     
-    Responde de forma muy breve (máximo 3 párrafos), profesional y en español de Argentina.
+    Pregunta del usuario: "${customInstruction || 'Hacé un balance de la carga de trabajo y avisame si hay mucha demora proyectada.'}"
+    
+    Respuesta: Breve, al grano, estilo informe de WhatsApp empresarial, en español de Argentina.
   `;
 
   try {
@@ -34,12 +35,12 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
       contents: prompt,
     });
 
-    return response.text || "No pude generar un análisis en este momento.";
+    return response.text || "No hay comentarios por ahora.";
   } catch (error: any) {
     console.error("Error de IA:", error);
     if (!apiKey) {
-      return "⚠️ ERROR: No se detectó la API_KEY en el servidor. Asegúrate de que esté configurada en Vercel.";
+      return "⚠️ CONFIGURACIÓN PENDIENTE: Entrá a Vercel > Settings > Environment Variables y cargá la clave con el nombre API_KEY.";
     }
-    return `Ocurrió un error al consultar la IA: ${error.message}`;
+    return `⚠️ Error de conexión con Gemini: ${error.message}`;
   }
 };
