@@ -1,10 +1,10 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma, ShieldCheck, Ticket } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -18,6 +18,36 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
+  const [isAiReady, setIsAiReady] = useState<boolean>(false);
+
+  // Verificar estado de la llave al cargar
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setIsAiReady(hasKey || !!process.env.API_KEY);
+      } else {
+        setIsAiReady(!!process.env.API_KEY);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleSelectKey = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio && typeof aistudio.openSelectKey === 'function') {
+      try {
+        await aistudio.openSelectKey();
+        setIsAiReady(true);
+        setAiAnalysis(null);
+      } catch (e) {
+        console.error("Error al abrir selector:", e);
+      }
+    } else {
+      alert("Para usar la IA en este sitio, asegúrate de haber configurado la API_KEY en las variables de entorno de tu servidor o estar usando el navegador compatible.");
+    }
+  };
 
   const dateOrders = useMemo(() => orders.filter(o => o.pickupDate === selectedDate), [orders, selectedDate]);
 
@@ -115,8 +145,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     try {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
+      setIsAiReady(true);
     } catch (err: any) {
-      setAiAnalysis(`Error: ${err.message || 'No se pudo conectar con la IA. Verifique su API_KEY.'}`);
+      setAiAnalysis(err.message || 'Error de conexión con la IA.');
+      if (err.message.includes('configuración') || err.message.includes('API Key')) {
+        setIsAiReady(false);
+      }
     } finally {
       setIsLoadingAi(false);
     }
@@ -220,7 +254,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={hourlyChartData} margin={{ top: 25, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
@@ -230,10 +264,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   {chartMetric === 'units' ? (
                     <>
                       <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#1e40af' }} />
+                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '10px', fontWeight: '900', fill: '#1e40af' }} />
                       </Bar>
                       <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#9a3412' }} />
+                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '10px', fontWeight: '900', fill: '#9a3412' }} />
                       </Bar>
                     </>
                   ) : (
@@ -246,7 +280,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
          </div>
 
-         {/* Panel IA Simplificado */}
+         {/* Panel IA */}
          <div className="bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col min-h-[400px]">
             <div className="p-5 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -258,6 +292,13 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <p className="text-[9px] text-orange-400 font-bold uppercase tracking-widest">IA Inteligente</p>
                  </div>
               </div>
+              <button 
+                onClick={handleSelectKey} 
+                className={`p-2 rounded-lg transition-all ${isAiReady ? 'bg-slate-700 text-slate-400 hover:text-white' : 'bg-orange-600 text-white animate-pulse'}`}
+                title="Configurar Conexión"
+              >
+                <Key size={16} />
+              </button>
             </div>
             
             <div className="p-4 flex-1 flex flex-col gap-3 overflow-hidden">
@@ -267,6 +308,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <Loader2 className="animate-spin" size={24} />
                     <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Consultando logística...</p>
                   </div>
+                ) : !isAiReady && !aiAnalysis ? (
+                   <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-2">
+                      <AlertTriangle className="text-orange-500" size={32} />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white">Configuración Pendiente</p>
+                      <button 
+                        onClick={handleSelectKey}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-orange-700 transition-colors"
+                      >
+                        Configurar Ahora
+                      </button>
+                   </div>
                 ) : aiAnalysis ? (
                   <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
                 ) : (

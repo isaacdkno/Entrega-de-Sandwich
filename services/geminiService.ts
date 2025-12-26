@@ -3,11 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Inicialización del cliente justo antes de usarlo para capturar la API Key más reciente
+  // Inicialización del cliente con la API Key del entorno
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("An API Key must be set when running in a browser. Por favor, selecciona una API Key en el panel de IA.");
+    throw new Error("Falta configuración de IA. Por favor, haga clic en el icono de la llave para configurar su acceso.");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -55,8 +55,8 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
     const errorMsg = error.message || "Error desconocido";
     
     if (errorMsg.includes("429")) return "⚠️ Límite de cuota excedido. Esperá un minuto.";
-    if (errorMsg.includes("API key")) {
-        throw new Error("API Key inválida o no configurada.");
+    if (errorMsg.includes("API key") || errorMsg.includes("403")) {
+        throw new Error("La API Key es inválida o ha expirado. Reconfigura el acceso.");
     }
     
     return `Error de conexión: ${errorMsg}`;
