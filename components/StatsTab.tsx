@@ -220,25 +220,25 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
 
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyChartData} margin={{ top: 40, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={hourlyChartData} margin={{ top: 50, right: 30, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
+                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} minTickGap={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
                   <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', fontSize: '10px'}} />
                   <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px'}} />
                   
                   {chartMetric === 'units' ? (
                     <>
-                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={25}>
-                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '15px', fontWeight: '900', fill: '#1e40af' }} />
+                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[6, 6, 0, 0]}>
+                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#1e40af' }} />
                       </Bar>
-                      <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[6, 6, 0, 0]} barSize={25}>
-                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '15px', fontWeight: '900', fill: '#9a3412' }} />
+                      <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[6, 6, 0, 0]}>
+                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#9a3412' }} />
                       </Bar>
                     </>
                   ) : (
-                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={50}>
-                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '18px', fontWeight: '900', fill: '#0f172a' }} />
+                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '12px', fontWeight: '900', fill: '#0f172a' }} />
                     </Bar>
                   )}
                 </BarChart>
