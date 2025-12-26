@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma, ShieldCheck } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -17,17 +17,37 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
+  const [isAiReady, setIsAiReady] = useState<boolean>(false);
+
+  // Verificar si ya hay una API Key seleccionada al montar el componente
+  useEffect(() => {
+    const checkAiStatus = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setIsAiReady(hasKey || !!process.env.API_KEY);
+      } else {
+        // Si no estamos en el entorno de AI Studio, asumimos que se usa la env var
+        setIsAiReady(!!process.env.API_KEY);
+      }
+    };
+    checkAiStatus();
+  }, []);
 
   const handleSelectKey = async () => {
     const aistudio = (window as any).aistudio;
     if (aistudio) {
       try {
         await aistudio.openSelectKey();
+        // Según las instrucciones, asumimos éxito tras llamar a la función
+        setIsAiReady(true);
+        setAiAnalysis(null); // Limpiar errores previos
       } catch (e) {
         console.error("Error al abrir selector de llaves:", e);
+        alert("No se pudo abrir el configurador. Verifica que las ventanas emergentes estén permitidas.");
       }
     } else {
-      alert("El configurador de Google no está disponible en este navegador.");
+      alert("El configurador de Google no está disponible en este entorno.");
     }
   };
 
@@ -130,9 +150,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       const errorMsg = err.message || '';
       console.error("AI Error:", err);
       
-      // Regla de negocio: Si la entidad no se encuentra o hay error de API Key, abrir selector
       if (errorMsg.includes("not found") || errorMsg.includes("API key") || errorMsg.includes("404")) {
-        setAiAnalysis("⚠️ Configuración requerida. Por favor, selecciona una API Key válida en la ventana que se abrirá.");
+        setAiAnalysis("⚠️ Configuración requerida. Selecciona tu proyecto en la ventana emergente.");
         handleSelectKey();
       } else {
         setAiAnalysis(`Error: ${errorMsg || 'No se pudo conectar con la IA.'}`);
@@ -234,7 +253,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
 
          {/* Panel IA */}
-         <div className="bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col">
+         <div className="bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col min-h-[400px]">
             <div className="p-5 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
               <div className="flex items-center gap-2">
                  <div className="bg-orange-500 p-2 rounded-xl shadow-lg">
@@ -251,40 +270,64 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             </div>
             
             <div className="p-4 flex-1 flex flex-col gap-3 overflow-hidden">
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-300 text-xs leading-relaxed font-medium min-h-[120px]">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-300 text-xs leading-relaxed font-medium">
                 {isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
-                    <p className="font-bold text-[10px] animate-pulse uppercase">Consultando datos...</p>
+                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Consultando logística...</p>
+                  </div>
+                ) : !isAiReady ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
+                     <div className="p-4 bg-orange-500/10 rounded-full text-orange-500">
+                        <AlertTriangle size={32} />
+                     </div>
+                     <div className="space-y-2">
+                        <p className="font-black text-white text-[10px] uppercase tracking-widest">Se requiere API Key</p>
+                        <p className="text-slate-400 text-[10px] leading-tight">Para usar la IA, Google requiere que selecciones tu propia llave de acceso.</p>
+                     </div>
+                     <button 
+                        onClick={handleSelectKey}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-orange-900/20 active:scale-95 transition-all"
+                     >
+                        CONFIGURAR AHORA
+                     </button>
                   </div>
                 ) : aiAnalysis ? (
                   <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
                 ) : (
-                  <div className="text-slate-500 text-center py-4 italic flex flex-col items-center gap-2">
+                  <div className="text-slate-500 text-center py-4 italic flex flex-col items-center gap-2 h-full justify-center">
+                    <div className="flex items-center gap-1 text-emerald-500 mb-2">
+                       <ShieldCheck size={16} />
+                       <span className="text-[9px] font-black uppercase tracking-widest">Conexión Segura</span>
+                    </div>
                     <MessageSquareQuote size={24} className="opacity-10" />
-                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para analizar logística</p>
+                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Listo para analizar</p>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1">
-                 <textarea 
-                   className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold"
-                   rows={2}
-                   placeholder="Ej: ¿A qué hora tenemos más carga?"
-                   value={customAiPrompt}
-                   onChange={e => setCustomAiPrompt(e.target.value)}
-                 />
-              </div>
-              
-              <button 
-                onClick={() => handleAiAnalysis()}
-                disabled={isLoadingAi || displayedOrders.length === 0}
-                className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
-              >
-                {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
-                {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR PREGUNTA' : 'ANALIZAR HOY')}
-              </button>
+              {isAiReady && (
+                <>
+                  <div className="space-y-1">
+                     <textarea 
+                       className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold shadow-inner"
+                       rows={2}
+                       placeholder="Ej: ¿Cómo vamos con la producción?"
+                       value={customAiPrompt}
+                       onChange={e => setCustomAiPrompt(e.target.value)}
+                     />
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleAiAnalysis()}
+                    disabled={isLoadingAi || displayedOrders.length === 0}
+                    className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
+                  >
+                    {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
+                    {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR PREGUNTA' : 'ANALIZAR HOY')}
+                  </button>
+                </>
+              )}
             </div>
          </div>
       </div>
