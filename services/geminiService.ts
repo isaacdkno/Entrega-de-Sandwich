@@ -3,44 +3,43 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Inicialización directa. 
-  const apiKey = process.env.API_KEY || "";
-  const ai = new GoogleGenAI({ apiKey });
-
-  // Preparación de datos métricos detallados
-  const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
-  const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
-  const totalUnits = totalTriples + totalSimples;
-  const readyPercent = orders.length > 0 
-    ? Math.round((orders.filter(o => o.location).length / orders.length) * 100) 
-    : 0;
-
-  const prompt = `
-    SOS UN EXPERTO LOGÍSTICO EN UNA SANDWICHERÍA DE ALTO VOLUMEN.
-    Analiza estos datos para el día ${date} (Sector: ${scope}):
-    
-    - TOTAL COMANDAS: ${orders.length}
-    - TOTAL UNIDADES: ${totalUnits} sándwiches.
-    - DETALLE: ${totalTriples} Triples y ${totalSimples} Simples.
-    - PROGRESO: ${readyPercent}% de los pedidos ya están ubicados y listos.
-    
-    Pregunta del usuario: "${customInstruction || 'Hacé un balance de la carga de trabajo y avisame si hay mucha demora proyectada.'}"
-    
-    Respuesta: Breve, al grano, estilo informe de WhatsApp empresarial, en español de Argentina.
-  `;
+  // Obtenemos la clave de las variables de entorno de Vercel
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    return "⚠️ IA NO DETECTADA: La clave ya está en Vercel, pero falta un paso. Por favor, andá a la pestaña 'Deployments' en Vercel y hacé un 'Redeploy' del proyecto para activarla.";
+  }
 
   try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Preparación de datos métricos
+    const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
+    const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
+    const readyPercent = orders.length > 0 
+      ? Math.round((orders.filter(o => o.location).length / orders.length) * 100) 
+      : 0;
+
+    const prompt = `
+      SOS UN EXPERTO LOGÍSTICO EN UNA SANDWICHERÍA.
+      Analiza estos datos para el día ${date} (Sector: ${scope}):
+      - Comandas: ${orders.length}
+      - Detalle: ${totalTriples} Triples y ${totalSimples} Simples.
+      - Ubicados: ${readyPercent}% listos.
+      
+      Pregunta: "${customInstruction || 'Hacé un balance rápido.'}"
+      
+      Responde brevemente en español de Argentina.
+    `;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    return response.text || "No hay comentarios por ahora.";
+    return response.text || "Análisis completado.";
   } catch (error: any) {
     console.error("Error de IA:", error);
-    if (!apiKey) {
-      return "⚠️ CONFIGURACIÓN PENDIENTE: Entrá a Vercel > Settings > Environment Variables y cargá la clave con el nombre API_KEY.";
-    }
-    return `⚠️ Error de conexión con Gemini: ${error.message}`;
+    return `⚠️ Error de Gemini: ${error.message}. Verificá la validez de la clave.`;
   }
 };
