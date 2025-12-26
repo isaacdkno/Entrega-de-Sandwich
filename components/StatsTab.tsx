@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma, ShieldCheck } from 'lucide-react';
 
 interface StatsTabProps {
@@ -239,14 +239,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tighter text-sm"><Package size={18} className="text-blue-600" /> Distribución Horaria</h3>
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyChartData}>
+                <BarChart data={hourlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
                   <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', fontSize: '10px'}} />
                   <Legend iconType="circle" wrapperStyle={{paddingTop: '10px', fontSize: '10px'}} />
-                  <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
+                    <LabelList dataKey="Triples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#1e40af' }} />
+                  </Bar>
+                  <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20}>
+                    <LabelList dataKey="Simples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#9a3412' }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
