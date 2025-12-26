@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
@@ -18,6 +18,15 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
+
+  // Estado para detectar si es móvil
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const dateOrders = useMemo(() => orders.filter(o => o.pickupDate === selectedDate), [orders, selectedDate]);
 
@@ -230,15 +239,15 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   {chartMetric === 'units' ? (
                     <>
                       <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[6, 6, 0, 0]}>
-                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#1e40af' }} />
+                        {!isMobile && <LabelList dataKey="Triples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#1e40af' }} />}
                       </Bar>
                       <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[6, 6, 0, 0]}>
-                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#9a3412' }} />
+                        {!isMobile && <LabelList dataKey="Simples" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#9a3412' }} />}
                       </Bar>
                     </>
                   ) : (
                     <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]}>
-                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '12px', fontWeight: '900', fill: '#0f172a' }} />
+                      {!isMobile && <LabelList dataKey="Comandas" position="top" style={{ fontSize: '12px', fontWeight: '900', fill: '#0f172a' }} />}
                     </Bar>
                   )}
                 </BarChart>
