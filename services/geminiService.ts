@@ -3,40 +3,29 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Inicialización del cliente con la API Key del entorno
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("Falta configuración de IA. Por favor, haga clic en el icono de la llave para configurar su acceso.");
-  }
-
+  // Inicialización directa. 
+  // Si la API_KEY no está en el entorno, el SDK lanzará el error que capturaremos abajo.
+  const apiKey = process.env.API_KEY || "";
   const ai = new GoogleGenAI({ apiKey });
 
-  // Cálculo de métricas
-  const totalOrders = orders.length;
-  const ordersWithLocation = orders.filter(o => o.location).length;
-  const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
-  const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
-
-  // Reducción de datos para el prompt
-  const dataSummary = orders.slice(0, 50).map(o => 
-    `#${o.id}: ${o.pickupTime} - ${o.qtyTriples}T/${o.qtySimples}S - ${o.status}`
-  ).join('\n');
+  // Preparación de datos simplificada para el prompt
+  const stats = {
+    total: orders.length,
+    triples: orders.reduce((acc, o) => acc + o.qtyTriples, 0),
+    simples: orders.reduce((acc, o) => acc + o.qtySimples, 0),
+    listos: orders.filter(o => o.location).length
+  };
 
   const prompt = `
-    Analiza la logística de sándwiches para ${date} (${scope}).
-    Métricas: ${totalOrders} pedidos, ${ordersWithLocation} listos.
-    Totales: ${totalTriples} triples, ${totalSimples} simples.
+    Como experto en logística de una sandwichería, analiza estos datos para el ${date} (Sector: ${scope}):
+    - Total Pedidos: ${stats.total}
+    - Triples: ${stats.triples}
+    - Simples: ${stats.simples}
+    - Ya ubicados/listos: ${stats.listos}
     
-    Datos parciales:
-    ${dataSummary}
-
-    ${customInstruction && customInstruction.trim() !== '' 
-      ? `Responde a esta pregunta del usuario: "${customInstruction}"` 
-      : 'Dame un resumen ejecutivo muy breve con recomendaciones de producción.'
-    }
+    Pregunta o instrucción específica: "${customInstruction || 'Dame un resumen rápido de la situación y consejos de producción.'}"
     
-    Responde de forma concisa en español de Argentina.
+    Responde de forma muy breve (máximo 3 párrafos), profesional y en español de Argentina.
   `;
 
   try {
@@ -45,20 +34,12 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
       contents: prompt,
     });
 
-    if (!response || !response.text) {
-      return "No se recibió respuesta del asistente. Intente nuevamente.";
-    }
-
-    return response.text;
+    return response.text || "No pude generar un análisis en este momento.";
   } catch (error: any) {
-    console.error("Gemini Error:", error);
-    const errorMsg = error.message || "Error desconocido";
-    
-    if (errorMsg.includes("429")) return "⚠️ Límite de cuota excedido. Esperá un minuto.";
-    if (errorMsg.includes("API key") || errorMsg.includes("403")) {
-        throw new Error("La API Key es inválida o ha expirado. Reconfigura el acceso.");
+    console.error("Error de IA:", error);
+    if (!apiKey) {
+      return "⚠️ ERROR: No se detectó la API_KEY en el servidor. Asegúrate de que esté configurada en Vercel.";
     }
-    
-    return `Error de conexión: ${errorMsg}`;
+    return `Ocurrió un error al consultar la IA: ${error.message}`;
   }
 };
