@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma, ShieldCheck } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Key, AlertTriangle, Sigma, ShieldCheck, Ticket } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -13,6 +13,7 @@ interface StatsTabProps {
 export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]); 
   const [selectedFactory, setSelectedFactory] = useState<string>('ALL');
+  const [chartMetric, setChartMetric] = useState<'units' | 'orders'>('units');
   
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
@@ -39,9 +40,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     if (aistudio) {
       try {
         await aistudio.openSelectKey();
-        // Según las instrucciones, asumimos éxito tras llamar a la función
         setIsAiReady(true);
-        setAiAnalysis(null); // Limpiar errores previos
+        setAiAnalysis(null);
       } catch (e) {
         console.error("Error al abrir selector de llaves:", e);
         alert("No se pudo abrir el configurador. Verifica que las ventanas emergentes estén permitidas.");
@@ -124,12 +124,13 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   }, [displayedOrders]);
 
   const hourlyChartData = useMemo(() => {
-    const hourMap: Record<string, { hour: string; Triples: number; Simples: number }> = {};
+    const hourMap: Record<string, { hour: string; Triples: number; Simples: number; Comandas: number }> = {};
     displayedOrders.forEach(o => {
       const h = (o.pickupTime || '00:00').split(':')[0] + ':00';
-      if (!hourMap[h]) hourMap[h] = { hour: h, Triples: 0, Simples: 0 };
+      if (!hourMap[h]) hourMap[h] = { hour: h, Triples: 0, Simples: 0, Comandas: 0 };
       hourMap[h].Triples += o.qtyTriples;
       hourMap[h].Simples += o.qtySimples;
+      hourMap[h].Comandas += 1;
     });
     return Object.values(hourMap).sort((a, b) => a.hour.localeCompare(b.hour));
   }, [displayedOrders]);
@@ -236,7 +237,27 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       {/* Gráfico Horario e Interacción IA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
          <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tighter text-sm"><Package size={18} className="text-blue-600" /> Distribución Horaria</h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+               <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase tracking-tighter text-sm">
+                  <Package size={18} className="text-blue-600" /> Distribución Horaria
+               </h3>
+               
+               <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner w-full sm:w-auto">
+                  <button 
+                    onClick={() => setChartMetric('units')}
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'units' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <Sigma size={12} /> Unidades
+                  </button>
+                  <button 
+                    onClick={() => setChartMetric('orders')}
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'orders' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <Ticket size={12} /> Comandas
+                  </button>
+               </div>
+            </div>
+
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -245,12 +266,21 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
                   <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', fontSize: '10px'}} />
                   <Legend iconType="circle" wrapperStyle={{paddingTop: '10px', fontSize: '10px'}} />
-                  <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
-                    <LabelList dataKey="Triples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#1e40af' }} />
-                  </Bar>
-                  <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20}>
-                    <LabelList dataKey="Simples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#9a3412' }} />
-                  </Bar>
+                  
+                  {chartMetric === 'units' ? (
+                    <>
+                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
+                        <LabelList dataKey="Triples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#1e40af' }} />
+                      </Bar>
+                      <Bar name="Simples" dataKey="Simples" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20}>
+                        <LabelList dataKey="Simples" position="top" style={{ fontSize: '9px', fontWeight: '900', fill: '#9a3412' }} />
+                      </Bar>
+                    </>
+                  ) : (
+                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={40}>
+                      <LabelList dataKey="Comandas" position="top" style={{ fontSize: '11px', fontWeight: '900', fill: '#0f172a' }} />
+                    </Bar>
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
