@@ -3,17 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Obtenemos la clave de las variables de entorno de Vercel
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    return "⚠️ IA NO DETECTADA: La clave ya está en Vercel, pero falta un paso. Por favor, andá a la pestaña 'Deployments' en Vercel y hacé un 'Redeploy' del proyecto para activarla.";
-  }
-
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // La clave es inyectada automáticamente por la plataforma en process.env.API_KEY
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-    // Preparación de datos métricos
+    // Preparación de métricas rápidas para el contexto de la IA
     const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
     const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
     const readyPercent = orders.length > 0 
@@ -23,13 +17,13 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
     const prompt = `
       SOS UN EXPERTO LOGÍSTICO EN UNA SANDWICHERÍA.
       Analiza estos datos para el día ${date} (Sector: ${scope}):
-      - Comandas: ${orders.length}
+      - Total Comandas: ${orders.length}
       - Detalle: ${totalTriples} Triples y ${totalSimples} Simples.
-      - Ubicados: ${readyPercent}% listos.
+      - Estado de Producción: ${readyPercent}% de los pedidos ya tienen ubicación asignada.
       
-      Pregunta: "${customInstruction || 'Hacé un balance rápido.'}"
+      Instrucción específica del usuario: "${customInstruction || 'Hacé un balance logístico rápido.'}"
       
-      Responde brevemente en español de Argentina.
+      Responde brevemente en español (Argentina). Si detectás cuellos de botella (pocos pedidos ubicados a pesar de ser tarde), avisale al usuario.
     `;
 
     const response = await ai.models.generateContent({
@@ -37,9 +31,15 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
       contents: prompt,
     });
 
-    return response.text || "Análisis completado.";
+    return response.text || "Análisis completado sin texto de respuesta.";
   } catch (error: any) {
-    console.error("Error de IA:", error);
-    return `⚠️ Error de Gemini: ${error.message}. Verificá la validez de la clave.`;
+    console.error("Error crítico de IA:", error);
+    
+    // Si la clave no está presente en el proceso de construcción de Vercel
+    if (!process.env.API_KEY || process.env.API_KEY === "undefined") {
+        return "⚠️ CLAVE NO ENCONTRADA: Asegurate de haber agregado 'API_KEY' en la configuración de Vercel y que el último 'Redeploy' haya terminado con éxito.";
+    }
+
+    return `⚠️ ERROR DE IA: ${error.message || 'No se pudo conectar con Gemini'}. Verificá los créditos de tu API Key.`;
   }
 };

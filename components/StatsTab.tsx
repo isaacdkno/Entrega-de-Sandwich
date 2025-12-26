@@ -4,7 +4,7 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket, AlertCircle } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -19,7 +19,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
 
-  // Estado para detectar si es móvil
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -125,7 +124,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
     } catch (err: any) {
-      setAiAnalysis(`Error: ${err.message}`);
+      setAiAnalysis(`Ocurrió un error inesperado al conectar con el servidor.`);
     } finally {
       setIsLoadingAi(false);
     }
@@ -274,18 +273,21 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 {isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
-                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Analizando logística...</p>
+                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Conectando con el cerebro IA...</p>
                   </div>
                 ) : aiAnalysis ? (
-                  <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
+                  <div className={`animate-fade-in whitespace-pre-wrap ${aiAnalysis.includes('⚠️') ? 'text-orange-400' : 'text-slate-300'}`}>
+                    {aiAnalysis.includes('⚠️') && <AlertCircle size={16} className="inline mr-2" />}
+                    {aiAnalysis}
+                  </div>
                 ) : (
                   <div className="text-slate-500 text-center py-4 italic flex flex-col items-center gap-2 h-full justify-center">
                     <div className="flex items-center gap-1 text-emerald-500 mb-2">
                        <ShieldCheck size={16} />
-                       <span className="text-[9px] font-black uppercase tracking-widest">IA Lista</span>
+                       <span className="text-[9px] font-black uppercase tracking-widest">Listo para Procesar</span>
                     </div>
                     <MessageSquareQuote size={24} className="opacity-10" />
-                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">Consultar hoy</p>
+                    <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">¿Querés un balance del día?</p>
                   </div>
                 )}
               </div>
@@ -294,7 +296,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   <textarea 
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold shadow-inner"
                     rows={2}
-                    placeholder="Preguntar a la IA..."
+                    placeholder="Escribí una consulta a la IA..."
                     value={customAiPrompt}
                     onChange={e => setCustomAiPrompt(e.target.value)}
                   />
@@ -306,7 +308,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
               >
                 {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
-                {isLoadingAi ? 'PROCESANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR PREGUNTA' : 'ANÁLISIS LOGÍSTICO')}
+                {isLoadingAi ? 'PENSANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR CONSULTA' : 'GENERAR ANÁLISIS')}
               </button>
             </div>
          </div>
