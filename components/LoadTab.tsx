@@ -1,17 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserSession, Order, PickupBranch, OrderStatus, ProductionBranch, UserRole, PaymentStatus } from '../types';
 import { PICKUP_DATES, PICKUP_BRANCHES, PRODUCTION_BRANCHES, PAYMENT_STATUS_OPTIONS } from '../constants';
 import { saveOrder, searchOrders, deleteOrder } from '../services/storageService';
-import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2, Calendar, Clock, MapPin, Package, DollarSign, StickyNote, Phone } from 'lucide-react';
+import { Save, Settings, Loader2, Search, XCircle, Edit3, ChevronDown, ChevronUp, AlertCircle, PlusCircle, Trash2, Calendar, Clock, MapPin, Package, DollarSign, StickyNote, Phone, Hash, ClipboardList } from 'lucide-react';
 
 interface LoadTabProps {
   session: UserSession;
   onSessionUpdate: (session: UserSession) => void;
   refreshData: () => void;
+  orders: Order[];
 }
 
-export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refreshData }) => {
+export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refreshData, orders }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +33,37 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     pickupBranch: PickupBranch.CENTRAL,
   });
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // --- Estadísticas de Carga ---
+  const stats = useMemo(() => {
+    const factoryOrders = orders.filter(o => 
+      o.originBranch === session.currentProductionBranch && 
+      o.pickupDate === formData.pickupDate
+    );
+    
+    const totals = factoryOrders.reduce((acc, o) => {
+      acc.count++;
+      acc.triples += o.qtyTriples;
+      acc.simples += o.qtySimples;
+      
+      const branchLabel = PICKUP_BRANCHES.find(pb => pb.value === o.pickupBranch)?.label || o.pickupBranch;
+      if (!acc.byBranch[branchLabel]) {
+        acc.byBranch[branchLabel] = { count: 0, t: 0, s: 0 };
+      }
+      acc.byBranch[branchLabel].count++;
+      acc.byBranch[branchLabel].t += o.qtyTriples;
+      acc.byBranch[branchLabel].s += o.qtySimples;
+      
+      return acc;
+    }, { 
+      count: 0, 
+      triples: 0, 
+      simples: 0, 
+      byBranch: {} as Record<string, { count: number; t: number; s: number }> 
+    });
+    
+    return totals;
+  }, [orders, session.currentProductionBranch, formData.pickupDate]);
 
   useEffect(() => {
     if (message) {
@@ -137,13 +169,13 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   return (
     <div className="space-y-4 max-w-[1400px] mx-auto p-2">
       {/* Barra de Herramientas Superior */}
-      <div className="flex items-center justify-between gap-4">
-        <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
           <Settings size={16} className="text-orange-600" />
           Fábrica Origen: <span className="text-orange-600 ml-1">{session.currentProductionBranch}</span>
           <ChevronDown size={14} />
         </button>
-        <button onClick={() => setShowSearchPanel(!showSearchPanel)} className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all uppercase tracking-widest ${showSearchPanel ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 shadow-sm'}`}>
+        <button onClick={() => setShowSearchPanel(!showSearchPanel)} className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all uppercase tracking-widest ${showSearchPanel ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 shadow-sm'}`}>
           <Search size={16} />
           {showSearchPanel ? 'Cerrar Buscador' : 'Buscar / Editar comanda'}
         </button>
@@ -185,6 +217,46 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         </div>
       )}
 
+      {/* Monitor de Carga (Stats) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+         <div className="bg-slate-900 text-white p-4 rounded-3xl shadow-lg border-b-4 border-orange-600 flex items-center gap-4">
+            <div className="bg-white/10 p-3 rounded-2xl"><ClipboardList className="text-orange-500" /></div>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50">Comandas Hoy</p>
+              <p className="text-2xl font-black">{stats.count}</p>
+            </div>
+         </div>
+         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="bg-blue-100 p-3 rounded-2xl text-blue-600 font-black text-xl">T</div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Triples</p>
+              <p className="text-2xl font-black text-slate-800">{stats.triples}</p>
+            </div>
+         </div>
+         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="bg-orange-100 p-3 rounded-2xl text-orange-600 font-black text-xl">S</div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Simples</p>
+              <p className="text-2xl font-black text-slate-800">{stats.simples}</p>
+            </div>
+         </div>
+         {/* Desglose por Sucursal */}
+         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Carga por Destino</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+               {PICKUP_BRANCHES.map(branch => {
+                  const branchStat = stats.byBranch[branch.label] || { count: 0 };
+                  return (
+                    <div key={branch.value} className="flex-shrink-0 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                       <p className="text-[7px] font-black text-slate-500 uppercase truncate">{branch.label}</p>
+                       <p className="text-xs font-black text-slate-800">{branchStat.count}</p>
+                    </div>
+                  );
+               })}
+            </div>
+         </div>
+      </div>
+
       {/* Formulario Principal */}
       <div className={`bg-white rounded-[2rem] p-6 shadow-sm border transition-all ${isEditing ? 'ring-4 ring-blue-50 border-blue-200' : 'border-slate-100'}`}>
         <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4">
@@ -224,7 +296,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
           </div>
 
-          {/* Fila 2: Nombre, Dirección y Teléfono (Orden corregido) */}
+          {/* Fila 2: Nombre, Dirección y Teléfono */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2 md:col-span-1">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">4. Nombre Completo</label>

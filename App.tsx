@@ -67,17 +67,12 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // --- Sistema de Latido (Heartbeat) para Monitor de Actividad ---
   useEffect(() => {
     if (session?.email) {
-      // Actualizar inmediatamente al cargar
       updateUserActivity(session.email);
-      
-      // Actualizar cada 5 minutos mientras la app esté abierta
       const interval = setInterval(() => {
         updateUserActivity(session.email);
-      }, 300000); // 5 minutos
-      
+      }, 300000); 
       return () => clearInterval(interval);
     }
   }, [session?.email]);
@@ -151,7 +146,7 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-x-hidden pt-4 pb-24 sm:pb-8 container mx-auto px-4 max-w-6xl">
           {activeTab === 'carga' && canAccessTab(session.role, 'carga', session.email) && (
-            <LoadTab session={session} onSessionUpdate={setSession} refreshData={refreshOrders} />
+            <LoadTab session={session} onSessionUpdate={setSession} refreshData={refreshOrders} orders={orders} />
           )}
           {activeTab === 'ubicar' && canAccessTab(session.role, 'ubicar', session.email) && (
             <LocateTab orders={orders} refreshData={refreshOrders} />
