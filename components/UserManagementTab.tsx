@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppUser, UserRole, UserSession } from '../types';
 import { getAppUsers, saveAppUser, deleteAppUser } from '../services/storageService';
-import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Activity, RefreshCw, DatabaseZap } from 'lucide-react';
+import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Activity, RefreshCw, DatabaseZap, Clock, Circle } from 'lucide-react';
 
 interface UserManagementTabProps {
   currentUserSession: UserSession;
@@ -28,7 +29,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
 
   useEffect(() => {
     fetchUsers();
-    const interval = setInterval(fetchUsers, 60000);
+    const interval = setInterval(fetchUsers, 30000); // Actualizar cada 30s para el monitor en línea
     return () => clearInterval(interval);
   }, []);
 
@@ -80,15 +81,28 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
     }
   };
 
+  // Helper para determinar si un usuario está en línea (actividad en los últimos 5 min)
+  const getUserStatus = (lastActive?: string) => {
+    if (!lastActive) return { online: false, text: 'Nunca' };
+    const last = new Date(lastActive).getTime();
+    const now = new Date().getTime();
+    const diffMin = Math.floor((now - last) / 60000);
+    
+    if (diffMin < 5) return { online: true, text: 'En línea ahora' };
+    if (diffMin < 60) return { online: false, text: `Hace ${diffMin} min` };
+    if (diffMin < 1440) return { online: false, text: `Hace ${Math.floor(diffMin/60)} h` };
+    return { online: false, text: new Date(lastActive).toLocaleDateString() };
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 pb-20">
-      {/* Header */}
+      {/* Header Panel */}
       <div className="bg-slate-900 text-white p-6 rounded-3xl mb-6 shadow-xl relative overflow-hidden">
         <div className="relative z-10">
             <h2 className="text-2xl font-black flex items-center gap-2 uppercase tracking-tight">
               <ShieldAlert className="text-orange-500" /> Administración de Accesos
             </h2>
-            <p className="text-slate-400 mt-1 text-[10px] font-black uppercase tracking-widest">Panel Maestro de Usuarios Autorizados</p>
+            <p className="text-slate-400 mt-1 text-[10px] font-black uppercase tracking-widest">Panel Maestro y Monitor de Actividad</p>
         </div>
         <DatabaseZap className="absolute -right-4 -bottom-4 text-white/5" size={120} />
       </div>
@@ -150,11 +164,11 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
         </div>
       </div>
 
-      {/* Lista de Personal */}
+      {/* Lista de Personal con Monitor de Actividad */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
          <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
             <h3 className="font-black text-slate-700 uppercase tracking-widest text-[10px] flex items-center gap-2">
-                <Activity size={14} className="text-orange-600" /> Personal Autorizado
+                <Activity size={14} className="text-orange-600" /> Monitor de Personal en Tiempo Real
             </h3>
             <button onClick={fetchUsers} className="text-slate-400 hover:text-orange-600 transition-colors">
                 <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -162,24 +176,50 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
          </div>
          
          <div className="divide-y divide-slate-100">
-            {users.map((user) => (
-                <div key={user.email} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-800 text-sm truncate">{user.name}</p>
-                        <p className="text-[10px] text-slate-400 font-mono truncate">{user.email}</p>
+            {users.map((user) => {
+                const status = getUserStatus(user.lastActive);
+                return (
+                <div key={user.email} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition-colors gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative">
+                           <div className={`w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-400 border-2 ${status.online ? 'border-green-500' : 'border-slate-200'}`}>
+                               {user.name.charAt(0)}
+                           </div>
+                           <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${status.online ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <p className="font-black text-slate-800 text-sm truncate uppercase tracking-tighter">{user.name}</p>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase border tracking-widest ${status.online ? 'bg-green-50 text-green-600 border-green-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                    {status.online ? 'Online' : 'Offline'}
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-mono truncate">{user.email}</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <span className="hidden sm:inline-block px-2 py-1 bg-slate-100 rounded-lg text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">
-                            {user.role}
-                        </span>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-6">
+                        <div className="text-right flex flex-col items-end">
+                            <span className="px-2 py-0.5 bg-slate-100 rounded-lg text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 mb-1">
+                                {user.role}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-slate-400">
+                                <Clock size={10} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">{status.text}</span>
+                            </div>
+                        </div>
                         <div className="flex gap-1">
-                            <button onClick={() => handleEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDelete(user.email)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            <button onClick={() => handleEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><Edit2 size={16} /></button>
+                            <button onClick={() => handleDelete(user.email)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Eliminar"><Trash2 size={16} /></button>
                         </div>
                     </div>
                 </div>
-            ))}
+                );
+            })}
          </div>
+         {users.length === 0 && !isLoading && (
+             <div className="p-10 text-center text-slate-400 text-xs font-bold uppercase">No hay usuarios registrados</div>
+         )}
       </div>
     </div>
   );
