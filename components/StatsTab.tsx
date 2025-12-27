@@ -3,12 +3,15 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket, AlertCircle } from 'lucide-react';
+import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket, AlertCircle, Key, ExternalLink } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 
 interface StatsTabProps {
   orders: Order[];
 }
+
+// Fixed: Removed conflicting 'declare global' block for 'window.aistudio'.
+// Using type assertions where aistudio is accessed instead to resolve the modifier and type mismatch errors.
 
 export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]); 
@@ -18,14 +21,48 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
+    
+    // Fixed: Using type assertion for window as any to access aistudio safely
+    const checkKey = async () => {
+      const win = window as any;
+      if (win.aistudio) {
+        try {
+          const hasKey = await win.aistudio.hasSelectedApiKey();
+          setHasApiKey(hasKey);
+        } catch (e) {
+          console.error("Error checking API key status:", e);
+        }
+      } else {
+        // Si no estamos en el entorno de AI Studio, asumimos que se maneja por process.env
+        setHasApiKey(true);
+      }
+    };
+    checkKey();
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Fixed: Using type assertion for window as any to access aistudio safely
+  const handleOpenKeySelector = async () => {
+    const win = window as any;
+    if (win.aistudio) {
+      try {
+        await win.aistudio.openSelectKey();
+        // Asumimos éxito según guías y actualizamos estado
+        setHasApiKey(true);
+        setAiAnalysis(null);
+      } catch (e) {
+        console.error("Error opening key selector:", e);
+      }
+    }
+  };
 
   const dateOrders = useMemo(() => orders.filter(o => o.pickupDate === selectedDate), [orders, selectedDate]);
 
@@ -117,6 +154,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       setAiAnalysis("No hay datos cargados para analizar.");
       return;
     }
+
+    // Si detectamos que no hay key, forzamos el selector antes de proceder
+    if (hasApiKey === false) {
+      await handleOpenKeySelector();
+      return;
+    }
     
     setIsLoadingAi(true);
     setAiAnalysis(null);
@@ -128,7 +171,11 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       setAiAnalysis(result);
     } catch (err: any) {
       console.error("StatsTab AI error:", err);
-      setAiAnalysis(`⚠️ Ocurrió un error inesperado al conectar con el asistente de IA. Por favor, intentá de nuevo.`);
+      // Si falla por falta de entidad o similar, resetear estado de key
+      if (err.message?.includes('entity was not found')) {
+          setHasApiKey(false);
+      }
+      setAiAnalysis(`⚠️ Ocurrió un error al conectar con la IA. Asegúrate de tener una API Key vinculada.`);
     } finally {
       setIsLoadingAi(false);
     }
@@ -274,7 +321,24 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             
             <div className="p-4 flex-1 flex flex-col gap-3 overflow-hidden">
               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-300 text-xs leading-relaxed font-medium">
-                {isLoadingAi ? (
+                {hasApiKey === false ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                      <div className="bg-orange-500/10 p-4 rounded-full mb-4">
+                        <Key className="text-orange-500" size={32} />
+                      </div>
+                      <h5 className="text-white font-black uppercase text-xs mb-2 tracking-widest">IA Desconectada</h5>
+                      <p className="text-[10px] text-slate-400 font-bold mb-6 leading-relaxed">
+                        Para habilitar el análisis inteligente, debés vincular una cuenta de Google Cloud con facturación activa.
+                      </p>
+                      <button 
+                        onClick={handleOpenKeySelector}
+                        className="bg-orange-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-900/40 active:scale-95"
+                      >
+                         Vincular Cuenta <ExternalLink size={14} />
+                      </button>
+                      <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-[9px] text-slate-500 mt-4 underline hover:text-slate-300">Documentación de Facturación</a>
+                  </div>
+                ) : isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
                     <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Conectando con el cerebro IA...</p>
@@ -295,24 +359,28 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 )}
               </div>
 
-              <div className="space-y-1">
-                  <textarea 
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold shadow-inner"
-                    rows={2}
-                    placeholder="Escribí una consulta a la IA..."
-                    value={customAiPrompt}
-                    onChange={e => setCustomAiPrompt(e.target.value)}
-                  />
-              </div>
-              
-              <button 
-                onClick={() => handleAiAnalysis()}
-                disabled={isLoadingAi || displayedOrders.length === 0}
-                className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
-              >
-                {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
-                {isLoadingAi ? 'PENSANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR CONSULTA' : 'GENERAR ANÁLISIS')}
-              </button>
+              {hasApiKey !== false && (
+                <>
+                  <div className="space-y-1">
+                      <textarea 
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 resize-none font-bold shadow-inner"
+                        rows={2}
+                        placeholder="Escribí una consulta a la IA..."
+                        value={customAiPrompt}
+                        onChange={e => setCustomAiPrompt(e.target.value)}
+                      />
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleAiAnalysis()}
+                    disabled={isLoadingAi || displayedOrders.length === 0}
+                    className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
+                  >
+                    {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
+                    {isLoadingAi ? 'PENSANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR CONSULTA' : 'GENERAR ANÁLISIS')}
+                  </button>
+                </>
+              )}
             </div>
          </div>
       </div>
