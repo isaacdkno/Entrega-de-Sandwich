@@ -48,13 +48,23 @@ export const getAppUsers = async (): Promise<AppUser[]> => {
 };
 
 export const saveAppUser = async (user: AppUser): Promise<void> => {
-  if (!isSupabaseConfigured()) throw new Error("No DB connection");
+  if (!isSupabaseConfigured()) throw new Error("No hay conexión con la base de datos.");
+  
   const { error } = await supabase.from('app_users').upsert({
-    email: user.email.toLowerCase(),
+    email: user.email.trim().toLowerCase(),
     name: user.name,
     role: user.role
+  }, { 
+    onConflict: 'email' 
   });
-  if (error) throw error;
+
+  if (error) {
+      console.error("Error detallado de Supabase:", error);
+      // Personalizamos errores comunes para el usuario
+      if (error.code === '42501') throw new Error("PERMISO DENEGADO: La tabla app_users tiene RLS activado. Debes crear una política en Supabase que permita 'INSERT' y 'UPDATE' para el rol 'anon'.");
+      if (error.message.includes('fetch')) throw new Error("Error de Red: Verificá tu conexión a internet.");
+      throw new Error(error.message);
+  }
 };
 
 export const deleteAppUser = async (email: string): Promise<void> => {
@@ -129,7 +139,6 @@ export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?:
   const dbData = mapToDb(order);
 
   try {
-    // Check Renaming Collision
     if (isUpdate && oldId && oldId !== order.id) {
       const { data: collision } = await supabase.from('orders').select('id').eq('id', order.id).single();
       if (collision) throw new Error(`El ID #${order.id} ya existe.`);
@@ -138,16 +147,13 @@ export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?:
       return;
     }
 
-    // Check New Duplicate
     if (!isUpdate) {
       const { data: existing } = await supabase.from('orders').select('id').eq('id', order.id).single();
       if (existing) throw new Error(`La comanda #${order.id} YA EXISTE.`);
     }
 
-    // UPSERT with a single retry logic if it's a fetch error
     let result = await supabase.from('orders').upsert(dbData);
     
-    // If it failed due to a fetch error, wait 1 sec and retry once
     if (result.error && (result.error.message.includes('fetch') || result.error.message.includes('Network'))) {
         await new Promise(res => setTimeout(res, 1000));
         result = await supabase.from('orders').upsert(dbData);

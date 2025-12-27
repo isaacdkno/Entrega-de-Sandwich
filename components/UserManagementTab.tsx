@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppUser, UserRole, UserSession } from '../types';
 import { getAppUsers, saveAppUser, deleteAppUser, deleteAllOrders } from '../services/storageService';
-import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User, DatabaseZap } from 'lucide-react';
+import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User, DatabaseZap, AlertTriangle } from 'lucide-react';
 
 interface UserManagementTabProps {
   currentUserSession: UserSession;
@@ -60,8 +60,8 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
       await saveAppUser(formData);
       await fetchUsers();
       handleCancel();
-    } catch (e) {
-      setError('Error al guardar usuario. Verifique la conexión.');
+    } catch (e: any) {
+      setError(e.message || 'Error al guardar usuario. Verifique la conexión.');
     } finally {
       setIsSaving(false);
     }
@@ -175,7 +175,12 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-bold flex items-start gap-2 animate-fade-in">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button
