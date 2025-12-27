@@ -19,6 +19,21 @@ export const clearSession = () => {
 
 // --- Auth & Users ---
 
+/**
+ * Actualiza la fecha de última actividad del usuario.
+ * Se usa para el monitor de "En Línea".
+ */
+export const updateUserActivity = async (email: string): Promise<void> => {
+  if (!isSupabaseConfigured() || !email) return;
+  try {
+    await supabase.from('app_users')
+      .update({ last_active: new Date().toISOString() })
+      .ilike('email', email.trim().toLowerCase());
+  } catch (e) {
+    console.error("Error updating activity:", e);
+  }
+};
+
 export const verifyUserRole = async (email: string): Promise<UserRole | null> => {
   if (!isSupabaseConfigured()) {
       console.warn("Supabase not configured.");
@@ -35,10 +50,8 @@ export const verifyUserRole = async (email: string): Promise<UserRole | null> =>
 
     if (error || !data) return null;
 
-    // Registrar actividad al verificar (login)
-    await supabase.from('app_users')
-      .update({ last_active: new Date().toISOString() })
-      .ilike('email', cleanEmail);
+    // Registrar actividad inicial al loguearse
+    await updateUserActivity(cleanEmail);
 
     return data.role as UserRole;
   } catch (e) {
@@ -51,7 +64,7 @@ export const getAppUsers = async (): Promise<AppUser[]> => {
   const { data, error } = await supabase
     .from('app_users')
     .select('email, name, role, last_active')
-    .order('last_active', { ascending: false });
+    .order('last_active', { ascending: false, nullsFirst: false });
     
   if (error) return [];
   return (data || []).map(d => ({

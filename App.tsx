@@ -8,7 +8,7 @@ import { LocateTab } from './components/LocateTab';
 import { DeliverTab } from './components/DeliverTab';
 import { StatsTab } from './components/StatsTab';
 import { UserManagementTab } from './components/UserManagementTab';
-import { getSession, clearSession, getOrders } from './services/storageService';
+import { getSession, clearSession, getOrders, updateUserActivity } from './services/storageService';
 import { supabase, isSupabaseConfigured } from './services/client';
 import { LogOut, AlertTriangle, Lock, WifiOff, Menu } from 'lucide-react';
 
@@ -66,6 +66,21 @@ const App: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // --- Sistema de Latido (Heartbeat) para Monitor de Actividad ---
+  useEffect(() => {
+    if (session?.email) {
+      // Actualizar inmediatamente al cargar
+      updateUserActivity(session.email);
+      
+      // Actualizar cada 5 minutos mientras la app esté abierta
+      const interval = setInterval(() => {
+        updateUserActivity(session.email);
+      }, 300000); // 5 minutos
+      
+      return () => clearInterval(interval);
+    }
+  }, [session?.email]);
 
   useEffect(() => {
     const storedSession = getSession();
