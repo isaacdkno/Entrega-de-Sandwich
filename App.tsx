@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserSession, Order, UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
@@ -146,7 +145,7 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-x-hidden pt-4 pb-24 sm:pb-8 container mx-auto px-4 max-w-6xl">
           {activeTab === 'carga' && canAccessTab(session.role, 'carga', session.email) && (
-            <LoadTab session={session} onSessionUpdate={setSession} refreshData={refreshOrders} orders={orders} />
+            <LoadTab session={session} onSessionUpdate={setSession} refreshData={refreshOrders} />
           )}
           {activeTab === 'ubicar' && canAccessTab(session.role, 'ubicar', session.email) && (
             <LocateTab orders={orders} refreshData={refreshOrders} />
