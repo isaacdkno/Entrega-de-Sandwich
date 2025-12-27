@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { BrainCircuit, Loader2, RefreshCw, DollarSign, BarChart3, TrendingUp, Package, MessageSquareQuote, FileDown, CheckCircle2, Filter, Store, Sigma, Ticket } from 'lucide-react';
 
 interface StatsTabProps {
@@ -212,11 +212,17 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   />
                   {chartMode === 'UNIDADES' ? (
                     <>
-                      <Bar name="Simples" dataKey="Simples" fill="#fb923c" radius={[4, 4, 0, 0]} barSize={20} />
-                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Bar name="Simples" dataKey="Simples" fill="#fb923c" radius={[4, 4, 0, 0]} barSize={20}>
+                        <LabelList dataKey="Simples" position="top" style={{ fill: '#fb923c', fontSize: '9px', fontWeight: 'bold' }} />
+                      </Bar>
+                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
+                        <LabelList dataKey="Triples" position="top" style={{ fill: '#2563eb', fontSize: '9px', fontWeight: 'bold' }} />
+                      </Bar>
                     </>
                   ) : (
-                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={40} />
+                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={40}>
+                      <LabelList dataKey="Comandas" position="top" style={{ fill: '#0f172a', fontSize: '10px', fontWeight: 'bold' }} />
+                    </Bar>
                   )}
                 </BarChart>
               </ResponsiveContainer>
@@ -241,7 +247,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                         <div className="bg-emerald-500/10 text-emerald-500 px-4 py-1.5 rounded-full text-[9px] font-black uppercase flex items-center gap-2">
                             <CheckCircle2 size={12} /> LISTO
                         </div>
-                        <span className="text-[10px] font-black text-slate-600 uppercase italic">¿Querés un balance del día?</span>
+                        <span className="text-[10px] font-black text-slate-600 uppercase italic">Analizando pedidos...</span>
                     </div>
                   ) : aiAnalysis ? (
                     <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
