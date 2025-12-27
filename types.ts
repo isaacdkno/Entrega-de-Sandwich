@@ -37,6 +37,7 @@ export interface AppUser {
   email: string;
   role: UserRole;
   name: string;
+  lastActive?: string; // ISO Date string
 }
 
 export interface Order {

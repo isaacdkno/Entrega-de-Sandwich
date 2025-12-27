@@ -34,6 +34,12 @@ export const verifyUserRole = async (email: string): Promise<UserRole | null> =>
       .single();
 
     if (error || !data) return null;
+
+    // Registrar actividad al verificar (login)
+    await supabase.from('app_users')
+      .update({ last_active: new Date().toISOString() })
+      .ilike('email', cleanEmail);
+
     return data.role as UserRole;
   } catch (e) {
     return null;
@@ -42,9 +48,18 @@ export const verifyUserRole = async (email: string): Promise<UserRole | null> =>
 
 export const getAppUsers = async (): Promise<AppUser[]> => {
   if (!isSupabaseConfigured()) return [];
-  const { data, error } = await supabase.from('app_users').select('*').order('role', { ascending: true });
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('email, name, role, last_active')
+    .order('last_active', { ascending: false });
+    
   if (error) return [];
-  return data as AppUser[];
+  return (data || []).map(d => ({
+    email: d.email,
+    name: d.name,
+    role: d.role as UserRole,
+    lastActive: d.last_active
+  }));
 };
 
 export const saveAppUser = async (user: AppUser): Promise<void> => {
@@ -60,7 +75,6 @@ export const saveAppUser = async (user: AppUser): Promise<void> => {
 
   if (error) {
       console.error("Error detallado de Supabase:", error);
-      // Personalizamos errores comunes para el usuario
       if (error.code === '42501') throw new Error("PERMISO DENEGADO: La tabla app_users tiene RLS activado. Debes crear una política en Supabase que permita 'INSERT' y 'UPDATE' para el rol 'anon'.");
       if (error.message.includes('fetch')) throw new Error("Error de Red: Verificá tu conexión a internet.");
       throw new Error(error.message);

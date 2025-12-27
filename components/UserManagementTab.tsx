@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppUser, UserRole, UserSession } from '../types';
 import { getAppUsers, saveAppUser, deleteAppUser, deleteAllOrders } from '../services/storageService';
-import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User, DatabaseZap, AlertTriangle, Terminal, Copy, CheckCircle2, ShieldCheck, Database } from 'lucide-react';
+// Added RefreshCw to imports
+import { UserPlus, Trash2, Save, Edit2, Loader2, ShieldAlert, Mail, User, DatabaseZap, AlertTriangle, Terminal, Copy, CheckCircle2, ShieldCheck, Database, Activity, Clock, RefreshCw } from 'lucide-react';
 
 interface UserManagementTabProps {
   currentUserSession: UserSession;
@@ -33,6 +34,9 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
 
   useEffect(() => {
     fetchUsers();
+    // Auto-refresh cada minuto para ver actividad
+    const interval = setInterval(fetchUsers, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleEdit = (user: AppUser) => {
@@ -70,6 +74,30 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
     navigator.clipboard.writeText(sql);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const formatLastActive = (dateStr?: string) => {
+    if (!dateStr) return 'Nunca';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Hace un instante';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Hace ${diffHours} h`;
+
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isOnline = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMins = (now.getTime() - date.getTime()) / 60000;
+    return diffMins < 10; // Consideramos online si hubo actividad en los últimos 10 min
   };
 
   const handleDelete = async (email: string) => {
@@ -131,17 +159,17 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                 {dbStatus === 'ok' ? (
                     <div className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest animate-pulse">
                         <ShieldCheck size={14} />
-                        DB Conectada y Desbloqueada
+                        Monitor en Línea
                     </div>
                 ) : (
                     <div className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
                         <Database size={14} />
-                        Verificando Conexión...
+                        Reconectando...
                     </div>
                 )}
             </div>
             <p className="text-slate-400 mt-2 text-xs font-bold uppercase tracking-wider">
-              Administración de personal autorizado y seguridad del sistema.
+              Control de personal y auditoría de última conexión.
             </p>
         </div>
         <DatabaseZap className="absolute -right-4 -bottom-4 text-white/5" size={120} />
@@ -211,7 +239,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-orange-800 text-xs font-bold flex items-start gap-3">
                   <AlertTriangle size={20} className="shrink-0 text-orange-600" />
                   <div>
-                      <p className="text-sm mb-1 uppercase tracking-tight">Acción Requerida en Base de Datos</p>
+                      <p className="text-sm mb-1 uppercase tracking-tight">Acción Requerida</p>
                       <p className="font-medium opacity-80">{error}</p>
                   </div>
                 </div>
@@ -219,23 +247,15 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                 <div className="bg-slate-900 rounded-2xl p-6 border border-slate-700 shadow-2xl">
                     <div className="flex items-center gap-2 text-emerald-400 font-black mb-4 text-xs tracking-widest uppercase">
                         <Terminal size={18} />
-                        Reparación de Seguridad
+                        SQL de Mantenimiento
                     </div>
-                    <p className="text-slate-400 text-[11px] mb-4 leading-relaxed">
-                        Parece que intentaste realizar una acción en una tabla que aún tiene el "candado" de Supabase activado. 
-                        Copiá y ejecutá este código en el <b>SQL Editor</b> de tu panel de Supabase:
-                    </p>
-                    
                     <div className="space-y-3">
-                        {/* Tabla Users */}
                         <div className="bg-black/40 p-3 rounded-xl border border-slate-800 flex justify-between items-center group">
                             <code className="text-[10px] font-mono text-emerald-500">ALTER TABLE app_users DISABLE ROW LEVEL SECURITY;</code>
                             <button onClick={() => copyToClipboard('app_users')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all">
                                 <Copy size={16} />
                             </button>
                         </div>
-                        
-                        {/* Tabla Orders */}
                         <div className="bg-black/40 p-3 rounded-xl border border-slate-800 flex justify-between items-center group">
                             <code className="text-[10px] font-mono text-emerald-500">ALTER TABLE orders DISABLE ROW LEVEL SECURITY;</code>
                             <button onClick={() => copyToClipboard('orders')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all">
@@ -243,8 +263,6 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                             </button>
                         </div>
                     </div>
-
-                    {copied && <p className="text-[10px] text-emerald-500 font-black mt-4 animate-bounce text-center uppercase tracking-widest">✓ Comando Copiado al Portapapeles</p>}
                 </div>
             </div>
           )}
@@ -271,31 +289,55 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
         </form>
       </div>
 
-      {/* List */}
+      {/* List - Monitor Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12">
          <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
             <h3 className="font-black text-slate-700 uppercase tracking-tighter text-sm flex items-center gap-2">
-                <ShieldCheck size={18} className="text-emerald-600" /> Personal Autorizado 
+                <Activity size={18} className="text-orange-600" /> Monitor de Actividad
                 <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] ml-1">{users.length}</span>
             </h3>
-            {isLoading && <Loader2 className="animate-spin text-orange-500" size={20} />}
+            <button onClick={fetchUsers} className="p-2 text-slate-400 hover:text-orange-600 transition-colors">
+                <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+            </button>
          </div>
          
          <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
                <thead className="bg-slate-100/50 text-slate-400 font-black uppercase text-[10px] tracking-widest">
                   <tr>
-                    <th className="p-5">Nombre Real</th>
-                    <th className="p-5">Email</th>
-                    <th className="p-5">Rol Asignado</th>
+                    <th className="p-5">Personal</th>
+                    <th className="p-5">Estado / Actividad</th>
+                    <th className="p-5">Nivel</th>
                     <th className="p-5 text-right">Gestión</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-100">
-                  {users.map((user) => (
+                  {users.map((user) => {
+                    const online = isOnline(user.lastActive);
+                    return (
                     <tr key={user.email} className="group hover:bg-slate-50 transition-colors">
-                      <td className="p-5 font-black text-slate-800">{user.name}</td>
-                      <td className="p-5 text-slate-500 font-mono text-xs">{user.email}</td>
+                      <td className="p-5">
+                        <div className="font-black text-slate-800">{user.name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{user.email}</div>
+                      </td>
+                      <td className="p-5">
+                        <div className="flex items-center gap-2">
+                           {online ? (
+                               <div className="relative flex h-2 w-2">
+                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                               </div>
+                           ) : (
+                               <div className="h-2 w-2 rounded-full bg-slate-300"></div>
+                           )}
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${online ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {online ? 'En Línea' : 'Desconectado'}
+                           </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-slate-400">
+                           <Clock size={10} /> {formatLastActive(user.lastActive)}
+                        </div>
+                      </td>
                       <td className="p-5">
                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
                           user.role === UserRole.ADMIN ? 'bg-purple-50 text-purple-700 border-purple-100' :
@@ -319,14 +361,8 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                          </div>
                       </td>
                     </tr>
-                  ))}
-                  {users.length === 0 && !isLoading && (
-                    <tr>
-                      <td colSpan={4} className="p-10 text-center text-slate-400 italic font-medium">
-                        No se detectaron usuarios registrados. 
-                      </td>
-                    </tr>
-                  )}
+                    );
+                  })}
                </tbody>
             </table>
          </div>
@@ -340,7 +376,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                   Mantenimiento Crítico
               </div>
               <p className="text-rose-700 mb-6 text-sm font-bold opacity-80 uppercase tracking-tight">
-                  Atención: Esta acción eliminará permanentemente todos los registros de pedidos de la base de datos central. No se puede deshacer.
+                  Atención: Esta sección eliminará permanentemente todos los registros de pedidos. No se puede deshacer.
               </p>
               <button 
                 onClick={handleWipeDatabase}
