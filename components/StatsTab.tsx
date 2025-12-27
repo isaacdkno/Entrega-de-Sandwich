@@ -10,9 +10,6 @@ interface StatsTabProps {
   orders: Order[];
 }
 
-// Fixed: Removed conflicting 'declare global' block for 'window.aistudio'.
-// Using type assertions where aistudio is accessed instead to resolve the modifier and type mismatch errors.
-
 export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]); 
   const [selectedFactory, setSelectedFactory] = useState<string>('ALL');
@@ -21,6 +18,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [customAiPrompt, setCustomAiPrompt] = useState('');
+  
+  // Estados de la API Key: null (verificando), false (falta vincular), true (lista)
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -29,7 +28,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     
-    // Fixed: Using type assertion for window as any to access aistudio safely
     const checkKey = async () => {
       const win = window as any;
       if (win.aistudio) {
@@ -38,9 +36,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
           setHasApiKey(hasKey);
         } catch (e) {
           console.error("Error checking API key status:", e);
+          setHasApiKey(false);
         }
       } else {
-        // Si no estamos en el entorno de AI Studio, asumimos que se maneja por process.env
+        // Entorno fuera de AI Studio (ej: desarrollo local con .env)
         setHasApiKey(true);
       }
     };
@@ -49,13 +48,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fixed: Using type assertion for window as any to access aistudio safely
   const handleOpenKeySelector = async () => {
     const win = window as any;
     if (win.aistudio) {
       try {
         await win.aistudio.openSelectKey();
-        // Asumimos éxito según guías y actualizamos estado
+        // Asumimos éxito por flujo de la plataforma y procedemos
         setHasApiKey(true);
         setAiAnalysis(null);
       } catch (e) {
@@ -155,7 +153,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       return;
     }
 
-    // Si detectamos que no hay key, forzamos el selector antes de proceder
     if (hasApiKey === false) {
       await handleOpenKeySelector();
       return;
@@ -169,13 +166,13 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     try {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
+      setCustomAiPrompt(''); // Limpiar después de éxito
     } catch (err: any) {
       console.error("StatsTab AI error:", err);
-      // Si falla por falta de entidad o similar, resetear estado de key
       if (err.message?.includes('entity was not found')) {
           setHasApiKey(false);
       }
-      setAiAnalysis(`⚠️ Ocurrió un error al conectar con la IA. Asegúrate de tener una API Key vinculada.`);
+      setAiAnalysis(err.message || `⚠️ Error de conexión con la IA.`);
     } finally {
       setIsLoadingAi(false);
     }
@@ -225,34 +222,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
          </div>
       </div>
 
-      {/* Carga por Sucursal */}
-      <div className="mb-6">
-        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm">
-          <Store size={18} className="text-orange-600" /> Carga por Sucursal
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            <div className="bg-orange-600 p-3 rounded-xl shadow-lg border-2 border-orange-500 transform scale-105 sm:scale-100 z-10">
-              <div className="flex items-center gap-1 border-b border-white/30 pb-1 mb-2">
-                <Sigma size={12} className="text-white" />
-                <p className="text-[9px] font-black text-white uppercase truncate">TOTAL GENERAL</p>
-              </div>
-              <div className="flex justify-between items-end">
-                 <span className="text-2xl font-black text-white">{globalTotal.total}</span>
-                 <span className="text-[8px] font-bold text-orange-100 uppercase">Unid</span>
-              </div>
-            </div>
-            {branchStats.map(stat => (
-              <div key={stat.name} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[9px] font-black text-slate-400 uppercase mb-2 border-b pb-1 truncate">{stat.name}</p>
-                <div className="flex justify-between items-end">
-                   <span className="text-xl font-black text-slate-900">{stat.total}</span>
-                   <span className="text-[8px] font-bold text-slate-400 uppercase">Unid</span>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-
       {/* Gráfico Horario e Interacción IA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
          <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -262,16 +231,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                </h3>
                
                <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner w-full sm:w-auto">
-                  <button 
-                    onClick={() => setChartMetric('units')}
-                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'units' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
+                  <button onClick={() => setChartMetric('units')} className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'units' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                     <Sigma size={12} /> Unidades
                   </button>
-                  <button 
-                    onClick={() => setChartMetric('orders')}
-                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'orders' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
+                  <button onClick={() => setChartMetric('orders')} className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${chartMetric === 'orders' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                     <Ticket size={12} /> Comandas
                   </button>
                </div>
@@ -281,11 +244,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourlyChartData} margin={{ top: 50, right: 30, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} minTickGap={10} />
+                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
                   <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', fontSize: '10px'}} />
                   <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px'}} />
-                  
                   {chartMetric === 'units' ? (
                     <>
                       <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[6, 6, 0, 0]}>
@@ -321,7 +283,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
             
             <div className="p-4 flex-1 flex flex-col gap-3 overflow-hidden">
               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-300 text-xs leading-relaxed font-medium">
-                {hasApiKey === false ? (
+                {hasApiKey === null ? (
+                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
+                      <Loader2 className="animate-spin" size={24} />
+                      <p className="font-bold text-[10px] uppercase tracking-widest">Verificando conexión...</p>
+                   </div>
+                ) : hasApiKey === false ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                       <div className="bg-orange-500/10 p-4 rounded-full mb-4">
                         <Key className="text-orange-500" size={32} />
@@ -330,18 +297,15 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                       <p className="text-[10px] text-slate-400 font-bold mb-6 leading-relaxed">
                         Para habilitar el análisis inteligente, debés vincular una cuenta de Google Cloud con facturación activa.
                       </p>
-                      <button 
-                        onClick={handleOpenKeySelector}
-                        className="bg-orange-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-900/40 active:scale-95"
-                      >
+                      <button onClick={handleOpenKeySelector} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-900/40 active:scale-95">
                          Vincular Cuenta <ExternalLink size={14} />
                       </button>
-                      <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-[9px] text-slate-500 mt-4 underline hover:text-slate-300">Documentación de Facturación</a>
+                      <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-[9px] text-slate-500 mt-4 underline hover:text-slate-300">Docs Facturación</a>
                   </div>
                 ) : isLoadingAi ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
                     <Loader2 className="animate-spin" size={24} />
-                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Conectando con el cerebro IA...</p>
+                    <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Pensando...</p>
                   </div>
                 ) : aiAnalysis ? (
                   <div className={`animate-fade-in whitespace-pre-wrap ${aiAnalysis.includes('⚠️') ? 'text-orange-400 font-bold' : 'text-slate-300'}`}>
@@ -351,7 +315,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                   <div className="text-slate-500 text-center py-4 italic flex flex-col items-center gap-2 h-full justify-center">
                     <div className="flex items-center gap-1 text-emerald-500 mb-2">
                        <ShieldCheck size={16} />
-                       <span className="text-[9px] font-black uppercase tracking-widest">Listo para Procesar</span>
+                       <span className="text-[9px] font-black uppercase tracking-widest">Listo</span>
                     </div>
                     <MessageSquareQuote size={24} className="opacity-10" />
                     <p className="text-[10px] uppercase font-black opacity-50 tracking-widest">¿Querés un balance del día?</p>
@@ -359,7 +323,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                 )}
               </div>
 
-              {hasApiKey !== false && (
+              {hasApiKey === true && (
                 <>
                   <div className="space-y-1">
                       <textarea 
@@ -368,14 +332,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                         placeholder="Escribí una consulta a la IA..."
                         value={customAiPrompt}
                         onChange={e => setCustomAiPrompt(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiAnalysis(); } }}
                       />
                   </div>
-                  
-                  <button 
-                    onClick={() => handleAiAnalysis()}
-                    disabled={isLoadingAi || displayedOrders.length === 0}
-                    className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}
-                  >
+                  <button onClick={() => handleAiAnalysis()} disabled={isLoadingAi || displayedOrders.length === 0} className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 disabled:opacity-30 ${customAiPrompt.trim() !== '' ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-white text-slate-900 hover:bg-orange-50'}`}>
                     {isLoadingAi ? <Loader2 className="animate-spin" size={14} /> : (customAiPrompt.trim() !== '' ? <Send size={14} /> : <RefreshCw size={14} />)}
                     {isLoadingAi ? 'PENSANDO...' : (customAiPrompt.trim() !== '' ? 'ENVIAR CONSULTA' : 'GENERAR ANÁLISIS')}
                   </button>
@@ -383,6 +343,34 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
               )}
             </div>
          </div>
+      </div>
+
+      {/* Carga por Sucursal */}
+      <div className="mb-6">
+        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm">
+          <Store size={18} className="text-orange-600" /> Carga por Sucursal
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="bg-orange-600 p-3 rounded-xl shadow-lg border-2 border-orange-500">
+              <div className="flex items-center gap-1 border-b border-white/30 pb-1 mb-2">
+                <Sigma size={12} className="text-white" />
+                <p className="text-[9px] font-black text-white uppercase truncate">TOTAL GENERAL</p>
+              </div>
+              <div className="flex justify-between items-end">
+                 <span className="text-2xl font-black text-white">{globalTotal.total}</span>
+                 <span className="text-[8px] font-bold text-orange-100 uppercase">Unid</span>
+              </div>
+            </div>
+            {branchStats.map(stat => (
+              <div key={stat.name} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-[9px] font-black text-slate-400 uppercase mb-2 border-b pb-1 truncate">{stat.name}</p>
+                <div className="flex justify-between items-end">
+                   <span className="text-xl font-black text-slate-900">{stat.total}</span>
+                   <span className="text-[8px] font-bold text-slate-400 uppercase">Unid</span>
+                </div>
+              </div>
+            ))}
+        </div>
       </div>
 
       {/* Progreso Operativo */}
@@ -395,7 +383,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <h4 className="font-black text-slate-800 uppercase text-xs truncate max-w-[120px]">{stat.name}</h4>
                     <span className="bg-slate-50 px-2 py-0.5 rounded text-[8px] font-black text-slate-500 uppercase">{stat.total} UNID</span>
                  </div>
-                 
                  <div className="space-y-3">
                     <div>
                        <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 mb-1">

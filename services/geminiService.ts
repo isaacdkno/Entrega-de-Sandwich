@@ -3,18 +3,23 @@ import { GoogleGenAI } from "@google/genai";
 import { Order } from "../types";
 
 export const analyzeOrders = async (orders: Order[], date: string, scope: string = 'Global', customInstruction?: string): Promise<string> => {
-  // Validación explícita de la API Key antes de inicializar
-  if (!process.env.API_KEY || process.env.API_KEY === 'undefined' || process.env.API_KEY.length < 5) {
-      throw new Error("No se detectó una API Key válida. Debés vincular tu cuenta.");
+  // Verificación estricta de la API Key para evitar el error de SDK en navegador
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === 'undefined' || apiKey === 'null' || apiKey.length < 10) {
+      throw new Error("⚠️ IA DESCONECTADA: No se detectó una API Key válida. Por favor, hacé clic en 'Vincular Cuenta' en el panel inferior.");
   }
 
   try {
-    // Fixed: Initialize GoogleGenAI right before the call to use the most recent API key from process.env.API_KEY
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
     const totalTriples = orders.reduce((acc, o) => acc + o.qtyTriples, 0);
     const totalSimples = orders.reduce((acc, o) => acc + o.qtySimples, 0);
     const totalOrders = orders.length;
+    
+    // Encontrar pedidos máximos para responder preguntas específicas del usuario
+    const maxTriples = orders.length > 0 ? Math.max(...orders.map(o => o.qtyTriples)) : 0;
+    const maxSimples = orders.length > 0 ? Math.max(...orders.map(o => o.qtySimples)) : 0;
+    
     const readyOrders = orders.filter(o => o.location).length;
     const readyPercent = totalOrders > 0 ? Math.round((readyOrders / totalOrders) * 100) : 0;
 
@@ -24,44 +29,44 @@ export const analyzeOrders = async (orders: Order[], date: string, scope: string
     }, {});
 
     const dataContext = `
-      DATOS DEL DÍA ${date} (${scope}):
+      CONTEXTO OPERATIVO (${date} - ${scope}):
       - Total Comandas: ${totalOrders}
-      - Unidades Totales: ${totalTriples} Triples, ${totalSimples} Simples.
-      - Estado de Ubicación: ${readyPercent}% (${readyOrders} de ${totalOrders} pedidos ya ubicados).
-      - Distribución por Sucursal: ${JSON.stringify(branchSummary)}
-      - Instrucción del usuario: ${customInstruction || 'Proporcionar un balance logístico general.'}
+      - Unidades: ${totalTriples} Triples, ${totalSimples} Simples.
+      - Ubicación: ${readyPercent}% listos.
+      - Picos de volumen: El pedido más grande tiene ${maxTriples} triples y ${maxSimples} simples.
+      - Distribución Sucursales: ${JSON.stringify(branchSummary)}
+      - Pregunta/Instrucción: ${customInstruction || 'Resumen logístico general.'}
     `;
 
-    // Fixed: Simplified contents to follow the ai.models.generateContent({ model, contents }) pattern.
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: dataContext,
+      contents: [{ role: 'user', parts: [{ text: dataContext }] }],
       config: {
-        systemInstruction: "Sos un experto en logística de una sandwichería de alta demanda en Tucumán, Argentina. Tu objetivo es analizar los datos de producción y entrega para los días 24 y 31 de diciembre. Debés ser breve, directo y usar un tono profesional pero local (español de Argentina). Si el porcentaje de ubicación es bajo (menos del 50%) y hay muchos pedidos, debés alertar sobre un posible cuello de botella en fábrica.",
-        temperature: 0.7,
-        topP: 0.95,
+        systemInstruction: "Sos un experto en logística de una sandwichería en Tucumán. Analizás datos para los días 24 y 31 de diciembre. Respondé de forma muy breve (máximo 3 párrafos), profesional y usando términos locales. Si el usuario pregunta por cantidades específicas (ej: 'pedidos de más de X'), revisá los datos de 'Picos de volumen' proporcionados y confirmá si existen o no.",
+        temperature: 0.6,
+        topP: 0.9,
       },
     });
 
-    // Fixed: Accessed .text property directly (not a method).
     if (!response.text) {
-        return "El asistente no pudo generar un análisis en este momento. Reintentá por favor.";
+        return "El asistente procesó los datos pero la respuesta está vacía. Reintentá.";
     }
 
     return response.text;
   } catch (error: any) {
-    console.error("Error crítico de Gemini API:", error);
+    console.error("Gemini Error:", error);
     
-    const errorMessage = error.message || 'Error desconocido';
+    const msg = error.message || '';
     
-    if (errorMessage.includes('API Key') || errorMessage.includes('403') || errorMessage.includes('invalid_key')) {
-        throw new Error("API Key inválida o inexistente. Por favor, vinculá tu cuenta de Google Cloud.");
+    // Captura específica del error de Google SDK en navegador si el check inicial falla por algún motivo
+    if (msg.includes('API Key') || msg.includes('browser')) {
+        throw new Error("⚠️ LLAVE NO VÁLIDA: La conexión con Google falló. Volvé a vincular tu cuenta usando el botón naranja.");
     }
     
-    if (errorMessage.includes('429')) {
-        return "⚠️ LÍMITE ALCANZADO: Se han realizado demasiadas consultas seguidas. Esperá un minuto.";
+    if (msg.includes('429')) {
+        return "⚠️ DEMASIADOS PEDIDOS: Estamos procesando muchas solicitudes. Esperá 30 segundos.";
     }
 
-    return `⚠️ ERROR TÉCNICO IA: ${errorMessage}`;
+    return `⚠️ ERROR TÉCNICO IA: ${msg}`;
   }
 };
