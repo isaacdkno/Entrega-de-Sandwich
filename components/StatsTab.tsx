@@ -1,10 +1,10 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { BrainCircuit, Loader2, RefreshCw, Filter, Download, Send, DollarSign, Store, BarChart3, TrendingUp, Package, MessageSquareQuote, Sigma, ShieldCheck, Ticket, AlertCircle } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -117,14 +117,18 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       setAiAnalysis("No hay datos cargados para analizar.");
       return;
     }
+    
     setIsLoadingAi(true);
     setAiAnalysis(null);
+    
     const scopeName = selectedFactory === 'ALL' ? 'Total Global' : `Fábrica ${selectedFactory}`;
+    
     try {
       const result = await analyzeOrders(displayedOrders, selectedDate, scopeName, customAiPrompt);
       setAiAnalysis(result);
     } catch (err: any) {
-      setAiAnalysis(`Ocurrió un error inesperado al conectar con el servidor.`);
+      console.error("StatsTab AI error:", err);
+      setAiAnalysis(`⚠️ Ocurrió un error inesperado al conectar con el asistente de IA. Por favor, intentá de nuevo.`);
     } finally {
       setIsLoadingAi(false);
     }
@@ -276,8 +280,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                     <p className="font-bold text-[10px] animate-pulse uppercase tracking-widest">Conectando con el cerebro IA...</p>
                   </div>
                 ) : aiAnalysis ? (
-                  <div className={`animate-fade-in whitespace-pre-wrap ${aiAnalysis.includes('⚠️') ? 'text-orange-400' : 'text-slate-300'}`}>
-                    {aiAnalysis.includes('⚠️') && <AlertCircle size={16} className="inline mr-2" />}
+                  <div className={`animate-fade-in whitespace-pre-wrap ${aiAnalysis.includes('⚠️') ? 'text-orange-400 font-bold' : 'text-slate-300'}`}>
                     {aiAnalysis}
                   </div>
                 ) : (
