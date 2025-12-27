@@ -4,7 +4,6 @@ import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-// Added missing Filter, Store, Sigma, Ticket icons to the lucide-react import list
 import { BrainCircuit, Loader2, RefreshCw, DollarSign, BarChart3, TrendingUp, Package, MessageSquareQuote, FileDown, CheckCircle2, Filter, Store, Sigma, Ticket } from 'lucide-react';
 
 interface StatsTabProps {
@@ -78,6 +77,50 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
     return Object.values(hourMap).sort((a, b) => a.hour.localeCompare(b.hour));
   }, [displayedOrders]);
 
+  const handleExportCSV = () => {
+    if (displayedOrders.length === 0) return;
+    
+    const headers = [
+      "Comanda", "Fecha", "Hora", "Cliente", "Telefono", "Direccion", 
+      "Retiro", "Triples", "Simples", "Total Unid", "Sena", "Estado Pago", 
+      "Origen", "Ubicacion", "Bultos", "Estado Operativo"
+    ];
+
+    const rows = displayedOrders.map(o => [
+      o.id,
+      o.pickupDate,
+      o.pickupTime,
+      `"${o.customerName.replace(/"/g, '""')}"`,
+      `"${o.phone || ''}"`,
+      `"${(o.address || '').replace(/"/g, '""')}"`,
+      o.pickupBranch,
+      o.qtyTriples,
+      o.qtySimples,
+      o.qtyTriples + o.qtySimples,
+      o.deposit,
+      o.paymentStatus,
+      o.originBranch,
+      o.location || '',
+      o.packageCount || 0,
+      o.status
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n");
+
+    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Respaldo_Pedidos_${selectedDate.replace(/\//g, '-')}_${selectedFactory}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleAiAnalysis = async () => {
     if (displayedOrders.length === 0) return;
     setIsLoadingAi(true);
@@ -111,8 +154,11 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
           <select value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border rounded-xl px-4 py-2 font-black text-xs uppercase shadow-sm outline-none">
             {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100">
-             <FileDown size={14} /> Excel
+          <button 
+            onClick={handleExportCSV}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95"
+          >
+             <FileDown size={14} /> Excel / Backup
           </button>
         </div>
       </div>
