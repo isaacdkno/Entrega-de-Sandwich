@@ -258,11 +258,11 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             </div>
             <div className="space-y-1">
                 <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1 text-center block leading-none mb-1">8A. UNIDADES TRIPLES</label>
-                <input type="number" min="0" className="w-full p-2 bg-blue-50/40 border border-blue-100 rounded-2xl font-black text-2xl text-center text-blue-800 outline-none focus:bg-white focus:border-blue-500 shadow-inner" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} disabled={isSaving} />
+                <input type="number" min="0" className="w-full p-2 bg-blue-50/40 border border-blue-100 rounded-2xl font-black text-2xl text-center text-blue-800 outline-none focus:bg-white focus:border-blue-500 shadow-inner" value={formData.qtyTriples || ''} onChange={e => setFormData({...formData, qtyTriples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} />
             </div>
             <div className="space-y-1">
                 <label className="text-[10px] font-black text-orange-600 uppercase tracking-widest ml-1 text-center block leading-none mb-1">8B. UNIDADES SIMPLES</label>
-                <input type="number" min="0" className="w-full p-2 bg-orange-50/40 border border-orange-100 rounded-2xl font-black text-2xl text-center text-orange-800 outline-none focus:bg-white focus:border-orange-500 shadow-inner" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} disabled={isSaving} />
+                <input type="number" min="0" className="w-full p-2 bg-orange-50/40 border border-orange-100 rounded-2xl font-black text-2xl text-center text-orange-800 outline-none focus:bg-white focus:border-orange-500 shadow-inner" value={formData.qtySimples || ''} onChange={e => setFormData({...formData, qtySimples: parseInt(e.target.value) || 0})} onFocus={e => e.target.select()} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} />
             </div>
           </div>
 
@@ -277,7 +277,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
             <div className="space-y-1">
                 <label className="text-[10px] font-black text-green-700 uppercase tracking-widest ml-1">10. MONTO DE SEÑA ($)</label>
                 <div className="relative">
-                    <input type="number" min="0" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm text-green-700 outline-none focus:bg-white focus:border-orange-500 shadow-sm" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} disabled={isSaving} />
+                    <input type="number" min="0" className="w-full py-2.5 pr-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm text-green-700 outline-none focus:bg-white focus:border-orange-500 shadow-sm" value={depositInput === '0' ? '' : depositInput} onChange={e => { setDepositInput(e.target.value); setFormData({...formData, deposit: parseFloat(e.target.value) || 0}); }} onWheel={(e) => e.currentTarget.blur()} disabled={isSaving} />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 font-black">$</span>
                 </div>
             </div>
