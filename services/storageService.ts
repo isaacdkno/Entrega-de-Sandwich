@@ -19,10 +19,6 @@ export const clearSession = () => {
 
 // --- Auth & Users ---
 
-/**
- * Actualiza la fecha de última actividad del usuario.
- * Se usa para el monitor de "En Línea".
- */
 export const updateUserActivity = async (email: string): Promise<void> => {
   if (!isSupabaseConfigured() || !email) return;
   try {
@@ -49,10 +45,7 @@ export const verifyUserRole = async (email: string): Promise<UserRole | null> =>
       .single();
 
     if (error || !data) return null;
-
-    // Registrar actividad inicial al loguearse
     await updateUserActivity(cleanEmail);
-
     return data.role as UserRole;
   } catch (e) {
     return null;
@@ -86,12 +79,7 @@ export const saveAppUser = async (user: AppUser): Promise<void> => {
     onConflict: 'email' 
   });
 
-  if (error) {
-      console.error("Error detallado de Supabase:", error);
-      if (error.code === '42501') throw new Error("PERMISO DENEGADO: La tabla app_users tiene RLS activado. Debes crear una política en Supabase que permita 'INSERT' y 'UPDATE' para el rol 'anon'.");
-      if (error.message.includes('fetch')) throw new Error("Error de Red: Verificá tu conexión a internet.");
-      throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 };
 
 export const deleteAppUser = async (email: string): Promise<void> => {
@@ -144,19 +132,44 @@ const mapToDb = (order: Order) => ({
     created_by: order.createdBy
 });
 
+/**
+ * Trae todos los pedidos de una fecha.
+ * Implementa paginación automática para superar el límite de 1000 registros.
+ */
 export const getOrders = async (dateFilter?: string): Promise<Order[]> => {
   if (!isSupabaseConfigured()) return [];
   
-  let query = supabase.from('orders').select('*');
-  
-  if (dateFilter) {
-    query = query.eq('pickup_date', dateFilter);
+  let allOrders: any[] = [];
+  let from = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = supabase.from('orders').select('*');
+    
+    if (dateFilter) {
+      query = query.eq('pickup_date', dateFilter);
+    }
+    
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      allOrders = [...allOrders, ...data];
+      from += pageSize;
+      // Si trajo menos de lo que pedimos, es que ya no hay más
+      if (data.length < pageSize) {
+        hasMore = false;
+      }
+    } else {
+      hasMore = false;
+    }
   }
   
-  const { data, error } = await query.order('created_at', { ascending: false });
-  
-  if (error) throw error;
-  return (data || []).map(mapFromDb);
+  return allOrders.map(mapFromDb);
 };
 
 export const searchOrders = async (term: string): Promise<Order[]> => {
@@ -170,7 +183,6 @@ export const searchOrders = async (term: string): Promise<Order[]> => {
 
 export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?: string): Promise<void> => {
   if (!isSupabaseConfigured()) throw new Error("Base de datos no conectada");
-
   const dbData = mapToDb(order);
 
   try {
@@ -188,20 +200,9 @@ export const saveOrder = async (order: Order, isUpdate: boolean = false, oldId?:
     }
 
     let result = await supabase.from('orders').upsert(dbData);
-    
-    if (result.error && (result.error.message.includes('fetch') || result.error.message.includes('Network'))) {
-        await new Promise(res => setTimeout(res, 1000));
-        result = await supabase.from('orders').upsert(dbData);
-    }
-
     if (result.error) throw result.error;
-
   } catch (error: any) {
     console.error('Save Error:', error);
-    const msg = error.message || '';
-    if (msg.includes('fetch') || msg.includes('Failed to fetch') || msg.includes('Network Error')) {
-      throw new Error("⚠️ ERROR DE RED: No se pudo contactar al servidor. Verifique su internet y vuelva a intentar.");
-    }
     throw error;
   }
 };
