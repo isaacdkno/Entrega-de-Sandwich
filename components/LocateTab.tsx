@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Order, ProductionBranch } from '../types';
 import { updateOrderLocation } from '../services/storageService';
 import { PRODUCTION_BRANCHES } from '../constants';
-import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, RefreshCw, Factory, Filter } from 'lucide-react';
+import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, RefreshCw, Factory, Filter, Keyboard } from 'lucide-react';
 
 interface LocateTabProps {
   orders: Order[];
@@ -35,12 +35,11 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     
+    // Si no hay búsqueda, no mostramos nada por defecto (filtro pedido por el usuario)
+    if (!q) return [];
+    
     return orders.filter(o => {
-        // Filtrado por fecha ya viene desde la base de datos (App.tsx)
-        // pero validamos por seguridad
         if (o.pickupDate !== selectedDate) return false;
-        
-        // Filtros operativos
         if (o.status === 'Entregado') return false;
         if (filterFactory !== 'ALL' && o.originBranch !== filterFactory) return false;
 
@@ -48,15 +47,11 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
         if (mode === 'locate' && hasLoc) return false;
         if (mode === 'edit' && !hasLoc) return false;
 
-        if (q) {
-          return (
-            o.id.toLowerCase().includes(q) ||
-            o.customerName.toLowerCase().includes(q) ||
-            o.address.toLowerCase().includes(q)
-          );
-        }
-
-        return true;
+        return (
+          o.id.toLowerCase().includes(q) ||
+          o.customerName.toLowerCase().includes(q) ||
+          o.address.toLowerCase().includes(q)
+        );
     });
   }, [orders, searchTerm, mode, filterFactory, selectedDate]);
 
@@ -199,8 +194,8 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input 
                 type="text"
-                className="w-full pl-11 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner"
-                placeholder="Filtrar por comanda o nombre..."
+                className="w-full pl-11 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner font-bold"
+                placeholder="Escriba comanda o nombre para buscar..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -208,13 +203,20 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
       </div>
 
       <div className="space-y-4">
-          {filteredOrders.length === 0 ? (
-             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 flex flex-col items-center gap-3">
-                 <Package size={48} className="opacity-20" />
-                 <div className="max-w-xs">
-                     <p className="font-bold text-slate-500">No hay pedidos pendientes para {selectedDate}.</p>
-                     <p className="text-xs mt-1 text-slate-400">Verifique la fecha en la cabecera.</p>
+          {!searchTerm.trim() ? (
+             <div className="text-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-4">
+                 <div className="bg-white p-4 rounded-full shadow-sm border border-slate-100">
+                    <Keyboard size={40} className="text-slate-300" />
                  </div>
+                 <div className="max-w-xs">
+                     <p className="font-black text-slate-500 uppercase text-xs tracking-widest">Ingrese una comanda</p>
+                     <p className="text-[10px] mt-1 text-slate-400 font-bold uppercase">Escriba en el buscador para ver los resultados de {selectedDate}.</p>
+                 </div>
+             </div>
+          ) : filteredOrders.length === 0 ? (
+             <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-3 shadow-sm">
+                 <Package size={48} className="opacity-10" />
+                 <p className="font-bold text-slate-500 uppercase text-xs tracking-tighter">No se encontraron coincidencias</p>
              </div>
           ) : (
              filteredOrders.map(order => renderCard(order))

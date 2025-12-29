@@ -4,8 +4,7 @@ import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PRODUCTION_BRANCHES } from '../constants';
-// Added Phone to lucide-react imports
-import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone } from 'lucide-react';
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone, SearchCode } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -30,7 +29,9 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     
-    // Filtrado estricto por fecha seleccionado (viene de App.tsx)
+    // Si no hay búsqueda, no mostramos nada (filtro pedido por el usuario)
+    if (!q) return [];
+    
     let result = orders.filter(o => o.pickupDate === selectedDate);
 
     if (filterBranch) {
@@ -41,14 +42,12 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
       result = result.filter(o => o.originBranch === filterFactory);
     }
 
-    if (q) {
-      result = result.filter(o => 
-        o.id.toLowerCase().includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        (o.phone && o.phone.includes(q)) ||
-        o.address.toLowerCase().includes(q)
-      );
-    }
+    result = result.filter(o => 
+      o.id.toLowerCase().includes(q) ||
+      o.customerName.toLowerCase().includes(q) ||
+      (o.phone && o.phone.includes(q)) ||
+      o.address.toLowerCase().includes(q)
+    );
 
     return result.sort((a, b) => {
         if (a.status === OrderStatus.DELIVERED && b.status !== OrderStatus.DELIVERED) return 1;
@@ -102,7 +101,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
               <input 
                 type="text"
                 className="w-full pl-11 p-3 rounded-xl text-slate-900 outline-none shadow-inner font-bold text-sm"
-                placeholder="Buscar comanda o cliente..."
+                placeholder="Escriba comanda para entregar..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -123,10 +122,20 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
        </div>
 
        <div className="space-y-4">
-          {filteredOrders.length === 0 ? (
+          {!searchTerm.trim() ? (
+             <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 text-slate-400 flex flex-col items-center gap-4 shadow-sm">
+               <div className="bg-orange-50 p-6 rounded-full">
+                  <SearchCode size={48} className="text-orange-200" />
+               </div>
+               <div className="max-w-xs">
+                  <p className="font-black text-slate-700 uppercase text-xs tracking-widest">Listo para entregar</p>
+                  <p className="font-bold text-slate-400 text-[10px] uppercase mt-1 leading-relaxed">Escriba el número de comanda o nombre del cliente para buscar en el listado de {selectedDate}.</p>
+               </div>
+             </div>
+          ) : filteredOrders.length === 0 ? (
              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
                <PackageCheck size={32} className="opacity-10" />
-               <p className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">No hay pedidos para {selectedDate}</p>
+               <p className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">No se encontraron resultados para "{searchTerm}"</p>
              </div>
           ) : (
             filteredOrders.map(order => {
