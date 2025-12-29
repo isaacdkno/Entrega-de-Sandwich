@@ -144,9 +144,17 @@ const mapToDb = (order: Order) => ({
     created_by: order.createdBy
 });
 
-export const getOrders = async (): Promise<Order[]> => {
+export const getOrders = async (dateFilter?: string): Promise<Order[]> => {
   if (!isSupabaseConfigured()) return [];
-  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+  
+  let query = supabase.from('orders').select('*');
+  
+  if (dateFilter) {
+    query = query.eq('pickup_date', dateFilter);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  
   if (error) throw error;
   return (data || []).map(mapFromDb);
 };

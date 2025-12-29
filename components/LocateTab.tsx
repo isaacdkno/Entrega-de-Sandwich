@@ -2,17 +2,17 @@
 import React, { useState, useMemo } from 'react';
 import { Order, ProductionBranch } from '../types';
 import { updateOrderLocation } from '../services/storageService';
-import { PRODUCTION_BRANCHES, PICKUP_DATES } from '../constants';
-import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, RefreshCw, Factory, Filter, Calendar } from 'lucide-react';
+import { PRODUCTION_BRANCHES } from '../constants';
+import { MapPin, Search, Loader2, Package, Edit3, ArrowLeft, RefreshCw, Factory, Filter } from 'lucide-react';
 
 interface LocateTabProps {
   orders: Order[];
   refreshData: () => void;
+  selectedDate: string;
 }
 
-export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => {
+export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selectedDate }) => {
   const [mode, setMode] = useState<'locate' | 'edit'>('locate');
-  const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFactory, setFilterFactory] = useState<string>('ALL');
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -35,11 +35,12 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     
-    // REQUERIMIENTO: Si no hay término de búsqueda, no mostrar nada
-    if (!q) return [];
-
     return orders.filter(o => {
+        // Filtrado por fecha ya viene desde la base de datos (App.tsx)
+        // pero validamos por seguridad
         if (o.pickupDate !== selectedDate) return false;
+        
+        // Filtros operativos
         if (o.status === 'Entregado') return false;
         if (filterFactory !== 'ALL' && o.originBranch !== filterFactory) return false;
 
@@ -47,11 +48,15 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         if (mode === 'locate' && hasLoc) return false;
         if (mode === 'edit' && !hasLoc) return false;
 
-        return (
+        if (q) {
+          return (
             o.id.toLowerCase().includes(q) ||
             o.customerName.toLowerCase().includes(q) ||
             o.address.toLowerCase().includes(q)
-        );
+          );
+        }
+
+        return true;
     });
   }, [orders, searchTerm, mode, filterFactory, selectedDate]);
 
@@ -76,7 +81,6 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
         delete newPkgInputs[id];
         setPackageInputs(newPkgInputs);
         
-        // Limpiar búsqueda después de ubicar exitosamente
         setSearchTerm('');
         refreshData();
       } catch (e: any) {
@@ -178,17 +182,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
       </div>
 
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-              <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
-                  <select 
-                    className="w-full pl-12 p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-sm text-slate-700 appearance-none shadow-sm"
-                    value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                  >
-                    {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-              </div>
+          <div className="grid grid-cols-1 gap-3">
               <div className="relative">
                   <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={16} />
                   <select 
@@ -206,7 +200,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
               <input 
                 type="text"
                 className="w-full pl-11 p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm shadow-inner"
-                placeholder="Ingresa número de comanda o cliente..."
+                placeholder="Filtrar por comanda o nombre..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -214,20 +208,12 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData }) => 
       </div>
 
       <div className="space-y-4">
-          {!searchTerm.trim() ? (
-             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 flex flex-col items-center gap-3">
-                 <Search size={48} className="opacity-10" />
-                 <div className="max-w-xs px-4">
-                     <p className="font-bold text-slate-600 uppercase text-xs tracking-widest">Esperando búsqueda</p>
-                     <p className="text-[11px] mt-1">Escribe un <b>Número de Comanda</b> o <b>Nombre</b> para ver los resultados.</p>
-                 </div>
-             </div>
-          ) : filteredOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
              <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 flex flex-col items-center gap-3">
                  <Package size={48} className="opacity-20" />
                  <div className="max-w-xs">
-                     <p className="font-bold text-slate-500">No se encontraron resultados.</p>
-                     <p className="text-xs mt-1 text-slate-400">Prueba con otro número o verifica los filtros superiores.</p>
+                     <p className="font-bold text-slate-500">No hay pedidos pendientes para {selectedDate}.</p>
+                     <p className="text-xs mt-1 text-slate-400">Verifique la fecha en la cabecera.</p>
                  </div>
              </div>
           ) : (

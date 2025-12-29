@@ -3,16 +3,17 @@ import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
-import { PICKUP_BRANCHES, PRODUCTION_BRANCHES, PICKUP_DATES } from '../constants';
-import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Calendar, Truck, Phone } from 'lucide-react';
+import { PRODUCTION_BRANCHES } from '../constants';
+// Added Phone to lucide-react imports
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
   refreshData: () => void;
+  selectedDate: string;
 }
 
-export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) => {
-  const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]);
+export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, selectedDate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBranch, setFilterBranch] = useState('');
   const [filterFactory, setFilterFactory] = useState<string>('ALL');
@@ -29,9 +30,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     
-    // REQUERIMIENTO: Si no hay término de búsqueda, no mostrar nada
-    if (!q) return [];
-
+    // Filtrado estricto por fecha seleccionado (viene de App.tsx)
     let result = orders.filter(o => o.pickupDate === selectedDate);
 
     if (filterBranch) {
@@ -42,12 +41,14 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
       result = result.filter(o => o.originBranch === filterFactory);
     }
 
-    result = result.filter(o => 
-      o.id.toLowerCase().includes(q) ||
-      o.customerName.toLowerCase().includes(q) ||
-      (o.phone && o.phone.includes(q)) ||
-      o.address.toLowerCase().includes(q)
-    );
+    if (q) {
+      result = result.filter(o => 
+        o.id.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        (o.phone && o.phone.includes(q)) ||
+        o.address.toLowerCase().includes(q)
+      );
+    }
 
     return result.sort((a, b) => {
         if (a.status === OrderStatus.DELIVERED && b.status !== OrderStatus.DELIVERED) return 1;
@@ -64,7 +65,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
     setProcessingId(id);
     try {
       await markOrderDelivered(id);
-      // Limpiar búsqueda después de entregar exitosamente
       setSearchTerm('');
       refreshData();
     } catch (e) {
@@ -86,7 +86,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
        <div className="bg-orange-600 p-4 sm:p-6 rounded-2xl shadow-lg mb-4 text-white border-b-4 border-orange-700">
          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2 tracking-tighter uppercase">
-                <PackageCheck size={24} className="sm:w-7 sm:h-7" /> Entregas
+                <PackageCheck size={24} className="sm:w-7 sm:h-7" /> Entregas ({selectedDate})
             </h2>
             <button 
                 onClick={handleManualRefresh} 
@@ -96,8 +96,8 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
             </button>
          </div>
          
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-           <div className="sm:col-span-2 relative">
+         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+           <div className="sm:col-span-3 relative">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text"
@@ -108,17 +108,6 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
               />
            </div>
            
-           <div className="relative">
-              <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none z-10" size={16} />
-              <select 
-                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer shadow-sm"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-              >
-                {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-           </div>
-
            <div className="relative">
               <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none z-10" size={16} />
               <select
@@ -134,15 +123,10 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
        </div>
 
        <div className="space-y-4">
-          {!searchTerm.trim() ? (
-             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
-               <Search size={32} className="opacity-10" />
-               <p className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Ingrese número de comanda para listar</p>
-             </div>
-          ) : filteredOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 flex flex-col items-center gap-2">
                <PackageCheck size={32} className="opacity-10" />
-               <p className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Sin resultados para esta búsqueda</p>
+               <p className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">No hay pedidos para {selectedDate}</p>
              </div>
           ) : (
             filteredOrders.map(order => {
@@ -160,7 +144,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData }) =
                    <div className="flex justify-between items-start mb-3 sm:mb-4">
                       <div className="max-w-[70%]">
                         <h3 className="text-lg sm:text-2xl font-black text-slate-900 leading-tight uppercase tracking-tighter truncate">{order.customerName}</h3>
-                        <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-1 sm:mt-2">
                             <span className="text-2xl sm:text-4xl font-mono font-black text-slate-900 tracking-tighter">#{order.id}</span>
                             <span className={`text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full font-black border uppercase flex items-center gap-1 ${isCentral ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
                                   <Factory size={8} className="sm:w-2.5 sm:h-2.5" /> {order.originBranch.replace('Fabrica ', '')}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserSession, Order, UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
@@ -9,31 +10,40 @@ import { StatsTab } from './components/StatsTab';
 import { UserManagementTab } from './components/UserManagementTab';
 import { getSession, clearSession, getOrders, updateUserActivity } from './services/storageService';
 import { supabase, isSupabaseConfigured } from './services/client';
-import { LogOut, AlertTriangle, Lock, WifiOff, Menu } from 'lucide-react';
+import { PICKUP_DATES } from './constants';
+import { LogOut, AlertTriangle, Lock, WifiOff, Menu, Calendar } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<UserSession | null>(null);
   const [activeTab, setActiveTab] = useState('carga');
+  const [globalDate, setGlobalDate] = useState(PICKUP_DATES[0]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  const refreshOrders = useCallback(async () => {
+  const refreshOrders = useCallback(async (dateOverride?: string) => {
     if (!isSupabaseConfigured()) {
       setConfigError(true);
       return;
     }
     setLoading(true);
     try {
-      const data = await getOrders();
+      // Pedimos al servidor solo los pedidos de la fecha seleccionada
+      // Esto soluciona el límite de 1000 registros y acelera la app
+      const data = await getOrders(dateOverride || globalDate);
       setOrders(data);
     } catch (error) {
       console.error("Failed to fetch orders", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [globalDate]);
+
+  const handleDateChange = (newDate: string) => {
+    setGlobalDate(newDate);
+    refreshOrders(newDate);
+  };
 
   const canAccessTab = (role: UserRole, tabId: string, email: string) => {
      if (tabId === 'usuarios') return email.toLowerCase() === 'isaacgomez78@gmail.com';
@@ -125,6 +135,19 @@ const App: React.FC = () => {
             <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest">{session.role}</p>
           </div>
         </div>
+
+        {/* Selector de Fecha Global - Maestro */}
+        <div className="flex items-center bg-slate-800 rounded-xl px-3 py-1.5 border border-slate-700">
+          <Calendar size={14} className="text-orange-500 mr-2" />
+          <select 
+            value={globalDate} 
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="bg-transparent text-[11px] font-black uppercase outline-none text-white cursor-pointer"
+          >
+            {PICKUP_DATES.map(d => <option key={d} value={d} className="bg-slate-800">{d}</option>)}
+          </select>
+        </div>
+
         <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
                 <p className="text-xs font-bold text-slate-300">{session.email}</p>
@@ -148,13 +171,13 @@ const App: React.FC = () => {
             <LoadTab session={session} onSessionUpdate={setSession} refreshData={refreshOrders} />
           )}
           {activeTab === 'ubicar' && canAccessTab(session.role, 'ubicar', session.email) && (
-            <LocateTab orders={orders} refreshData={refreshOrders} />
+            <LocateTab orders={orders} refreshData={refreshOrders} selectedDate={globalDate} />
           )}
           {activeTab === 'entregar' && canAccessTab(session.role, 'entregar', session.email) && (
-            <DeliverTab orders={orders} refreshData={refreshOrders} />
+            <DeliverTab orders={orders} refreshData={refreshOrders} selectedDate={globalDate} />
           )}
           {activeTab === 'estadisticas' && canAccessTab(session.role, 'estadisticas', session.email) && (
-            <StatsTab orders={orders} />
+            <StatsTab orders={orders} selectedDate={globalDate} />
           )}
           {activeTab === 'usuarios' && canAccessTab(session.role, 'usuarios', session.email) && (
             <UserManagementTab currentUserSession={session} />

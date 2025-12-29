@@ -1,17 +1,17 @@
 
 import React, { useMemo, useState } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
-import { PICKUP_DATES, PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
+import { PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { analyzeOrders } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { BrainCircuit, Loader2, RefreshCw, DollarSign, BarChart3, TrendingUp, Package, MessageSquareQuote, FileDown, CheckCircle2, Filter, Store, Sigma, Ticket } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
+  selectedDate: string;
 }
 
-export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
-  const [selectedDate, setSelectedDate] = useState(PICKUP_DATES[0]); 
+export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
   const [selectedFactory, setSelectedFactory] = useState<string>('ALL');
   const [chartMode, setChartMode] = useState<'UNIDADES' | 'COMANDAS'>('UNIDADES');
   
@@ -141,7 +141,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/50 p-2 rounded-2xl">
         <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3 uppercase tracking-tighter">
-            <BarChart3 className="text-orange-600" size={28} /> Tablero de Estadísticas
+            <BarChart3 className="text-orange-600" size={28} /> Tablero ({selectedDate})
         </h2>
         <div className="flex flex-wrap items-center gap-2 justify-center">
           <div className="bg-white border rounded-xl flex items-center px-3 py-1.5 shadow-sm">
@@ -151,9 +151,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders }) => {
                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
              </select>
           </div>
-          <select value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border rounded-xl px-4 py-2 font-black text-xs uppercase shadow-sm outline-none">
-            {PICKUP_DATES.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
           <button 
             onClick={handleExportCSV}
             className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95"
