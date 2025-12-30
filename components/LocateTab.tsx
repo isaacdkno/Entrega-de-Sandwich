@@ -100,7 +100,7 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
       return (
         <div key={order.id} className={`bg-white p-4 rounded-xl shadow-sm border-l-4 flex flex-col gap-3 animate-fade-in ${mode === 'edit' ? 'border-blue-500' : 'border-orange-500'}`}>
             <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="bg-slate-100 text-slate-700 font-mono font-bold px-2 py-0.5 rounded text-sm">#{order.id}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded border font-bold flex items-center gap-1 uppercase ${factoryBadgeStyle}`}>
@@ -108,9 +108,14 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
                         </span>
                         <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{order.pickupTime}</span>
                     </div>
-                    <h3 className="font-bold text-slate-800 leading-tight truncate max-w-[200px] uppercase">{order.customerName}</h3>
+                    <h3 className="font-bold text-slate-800 leading-tight truncate uppercase">{order.customerName}</h3>
+                    {/* Dirección agregada según pedido del usuario */}
+                    <div className="flex items-center gap-1 mt-0.5">
+                        <MapPin size={10} className="text-slate-400 shrink-0" />
+                        <p className="text-[10px] font-bold text-slate-500 uppercase truncate">{order.address || 'SIN DIRECCIÓN'}</p>
+                    </div>
                 </div>
-                <div className="text-right text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded">
+                <div className="text-right text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded shrink-0">
                     {order.qtyTriples} T | {order.qtySimples} S
                 </div>
             </div>
