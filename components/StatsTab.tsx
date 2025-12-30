@@ -57,6 +57,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
     return { 
         branches: Object.entries(branchData).map(([name, d]) => ({
             name, total: d.total, count: d.count,
+            prodUnits: d.prod,
+            delivUnits: d.deliv,
             prodP: d.total > 0 ? Math.round((d.prod / d.total) * 100) : 0,
             delivP: d.total > 0 ? Math.round((d.deliv / d.total) * 100) : 0
         })).sort((a, b) => b.total - a.total),
@@ -329,7 +331,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
                      <div>
                         <div className="flex justify-between items-center mb-2">
                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Producción</span>
-                           <span className="text-[9px] font-black text-blue-600">{b.prodP}%</span>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[9px] font-black text-slate-400">{b.prodUnits} unid</span>
+                             <span className="text-[9px] font-black text-blue-600">{b.prodP}%</span>
+                           </div>
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                            <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${b.prodP}%` }} />
@@ -338,7 +343,10 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
                      <div>
                         <div className="flex justify-between items-center mb-2">
                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Entrega</span>
-                           <span className="text-[9px] font-black text-emerald-600">{b.delivP}%</span>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[9px] font-black text-slate-400">{b.delivUnits} unid</span>
+                             <span className="text-[9px] font-black text-emerald-600">{b.delivP}%</span>
+                           </div>
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                            <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${b.delivP}%` }} />
