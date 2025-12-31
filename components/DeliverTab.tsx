@@ -4,7 +4,7 @@ import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
 import { markOrderDelivered } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
 import { PRODUCTION_BRANCHES } from '../constants';
-import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone, SearchCode } from 'lucide-react';
+import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone, SearchCode, Clock } from 'lucide-react';
 
 interface DeliverTabProps {
   orders: Order[];
@@ -79,6 +79,16 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
       return { color: 'bg-red-500', text: 'SIN UBICACIÓN' };
   };
 
+  const formatDeliveryTime = (isoString: string | null) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch (e) {
+      return '';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-2 sm:p-4 pb-24">
        {/* Header de Filtros */}
@@ -142,6 +152,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
               const statusStyle = getStatusHeader(order);
               const isDelivered = order.status === OrderStatus.DELIVERED;
               const isCentral = order.originBranch === ProductionBranch.CENTRAL;
+              const deliveryTime = formatDeliveryTime(order.deliveredAt);
               
               return (
               <div key={order.id} className={`bg-white rounded-2xl shadow-md overflow-hidden border transition-all ${isDelivered ? 'border-teal-100 opacity-60' : 'border-slate-200'}`}>
@@ -189,8 +200,15 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
 
                       <div className="flex justify-between items-center pt-2 sm:pt-3 border-t border-slate-200">
                           <span className={`text-[9px] sm:text-[11px] font-black px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase border ${order.paymentStatus === PaymentStatus.PAID ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{order.paymentStatus}</span>
-                          <div className="flex items-center gap-1 font-black text-xs sm:text-sm text-slate-700">
-                              <Package size={12} className="text-slate-400 sm:w-3.5 sm:h-3.5" /> {order.packageCount} bultos
+                          <div className="flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1 font-black text-xs sm:text-sm text-slate-700">
+                                  <Package size={12} className="text-slate-400 sm:w-3.5 sm:h-3.5" /> {order.packageCount} bultos
+                              </div>
+                              {isDelivered && deliveryTime && (
+                                <div className="flex items-center gap-1 font-black text-[9px] sm:text-[10px] text-teal-600 bg-teal-50 px-1.5 rounded-md border border-teal-100">
+                                  <Clock size={10} /> Entregado: {deliveryTime}
+                                </div>
+                              )}
                           </div>
                       </div>
                    </div>
