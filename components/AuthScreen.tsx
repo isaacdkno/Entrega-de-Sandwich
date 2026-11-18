@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { UserSession, ProductionBranch } from '../types';
 import { saveSession, verifyUserRole } from '../services/storageService';
+import { supabase } from '../services/client';
 import { PRODUCTION_BRANCHES } from '../constants';
-import { ChefHat, Loader2, LockKeyhole } from 'lucide-react';
+import { ChefHat, Loader2, LockKeyhole, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface AuthScreenProps {
   onLogin: (session: UserSession) => void;
@@ -10,29 +11,44 @@ interface AuthScreenProps {
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [branch, setBranch] = useState<ProductionBranch>(ProductionBranch.CENTRAL);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
     
     setIsLoggingIn(true);
     setError(null);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
+
+      if (authError || !authData.user) {
+        setError('Correo o contraseña incorrectos.');
+        setIsLoggingIn(false);
+        return;
+      }
+
       // Verify role against database
-      const role = await verifyUserRole(email);
+      const role = await verifyUserRole(cleanEmail);
 
       if (!role) {
-        setError('Acceso denegado: El correo no está registrado en el sistema.');
+        await supabase.auth.signOut();
+        setError('Acceso denegado: El correo no está registrado en la lista de usuarios.');
         setIsLoggingIn(false);
         return;
       }
 
       const session: UserSession = {
-        email,
+        email: cleanEmail,
         role,
         currentProductionBranch: branch
       };
@@ -73,6 +89,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoggingIn}
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Contraseña
+            </label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="w-full pl-10 pr-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoggingIn}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

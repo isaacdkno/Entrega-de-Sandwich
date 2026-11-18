@@ -160,6 +160,9 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                     </div>
                 </div>
                 {error && <p className="text-rose-600 text-[10px] font-bold uppercase">{error}</p>}
+                <p className="text-[10px] text-slate-400 font-bold">
+                  Importante: Para que un usuario nuevo pueda iniciar sesión, también debe tener su cuenta con contraseña creada en Supabase → Authentication → Users.
+                </p>
             </form>
         </div>
       </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { UserSession, Order, UserRole } from './types';
+import { UserSession, Order, UserRole, ProductionBranch } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { Tabs } from './components/Tabs';
 import { LoadTab } from './components/LoadTab';
@@ -8,7 +8,7 @@ import { LocateTab } from './components/LocateTab';
 import { DeliverTab } from './components/DeliverTab';
 import { StatsTab } from './components/StatsTab';
 import { UserManagementTab } from './components/UserManagementTab';
-import { getSession, clearSession, getOrders, updateUserActivity } from './services/storageService';
+import { getSession, saveSession, clearSession, getOrders, updateUserActivity, verifyUserRole } from './services/storageService';
 import { supabase, isSupabaseConfigured } from './services/client';
 import { PICKUP_DATES } from './constants';
 import { LogOut, AlertTriangle, Lock, WifiOff, Menu, Calendar } from 'lucide-react';
@@ -91,26 +91,73 @@ const App: React.FC = () => {
   }, [refreshOrders]);
 
   useEffect(() => {
-    refreshOrders();
-  }, [refreshOrders]);
+    if (session) {
+      refreshOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [refreshOrders, session]);
 
   useEffect(() => {
-    const storedSession = getSession();
-    if (storedSession) {
-      if (!storedSession.role) clearSession();
-      else {
-          setSession(storedSession);
-          setActiveTab(getDefaultTabForRole(storedSession.role));
+    if (!isSupabaseConfigured()) {
+      setConfigError(true);
+      return;
+    }
+
+    let isMounted = true;
+    const restoreAuthSession = async () => {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const authEmail = authSession?.user?.email?.toLowerCase();
+      if (!authEmail) {
+        clearSession();
+        if (isMounted) setSession(null);
+        return;
       }
-    }
-    if (isSupabaseConfigured()) {
-      const channel = supabase
-        .channel('public:orders')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => refreshOrdersRef.current())
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
+
+      const role = await verifyUserRole(authEmail);
+      if (!role) {
+        await supabase.auth.signOut();
+        clearSession();
+        if (isMounted) setSession(null);
+        return;
+      }
+
+      const storedSession = getSession();
+      const restoredSession: UserSession = {
+        email: authEmail,
+        role,
+        currentProductionBranch: storedSession?.currentProductionBranch || ProductionBranch.CENTRAL,
+      };
+      saveSession(restoredSession);
+      if (isMounted) {
+        setSession(restoredSession);
+        setActiveTab(getDefaultTabForRole(role));
+      }
+    };
+
+    restoreAuthSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        clearSession();
+        setSession(null);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    if (!session || !isSupabaseConfigured()) return;
+    const channel = supabase
+      .channel('public:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => refreshOrdersRef.current())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [Boolean(session)]);
 
   if (configError) {
     return (
@@ -211,7 +258,8 @@ const App: React.FC = () => {
     </div>
   );
 
-  function handleLogout() {
+  async function handleLogout() {
+    await supabase.auth.signOut();
     clearSession();
     setSession(null);
   }
