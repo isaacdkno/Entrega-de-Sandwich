@@ -159,6 +159,7 @@ export const getOrders = async (dateFilter?: string): Promise<Order[]> => {
     
     const { data, error } = await query
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
     
     if (error) throw error;
@@ -182,8 +183,14 @@ export const searchOrders = async (term: string): Promise<Order[]> => {
   if (!isSupabaseConfigured()) return [];
   const safeTerm = term.replace(/[,()*\\]/g, ' ').trim();
   if (!safeTerm) return [];
-  const { data, error } = await supabase.from('orders').select('*').or(`id.eq.${safeTerm},customer_name.ilike.%${safeTerm}%,phone.ilike.%${safeTerm}%,address.ilike.%${safeTerm}%`).limit(15);
-  if (error) return [];
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .or(`id.ilike.%${safeTerm}%,customer_name.ilike.%${safeTerm}%,phone.ilike.%${safeTerm}%,address.ilike.%${safeTerm}%`)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
+    .limit(50);
+  if (error) throw error;
   return (data || []).map(mapFromDb);
 };
 
