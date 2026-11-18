@@ -236,6 +236,14 @@ export const updateOrderLocation = async (id: string, location: string, packageC
   if (error) throw error;
 };
 
+export const markOrderInSearch = async (id: string): Promise<void> => {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase.from('orders').update({
+    status: OrderStatus.IN_SEARCH
+  }).eq('id', id);
+  if (error) throw error;
+};
+
 export const markOrderDelivered = async (id: string): Promise<void> => {
   if (!isSupabaseConfigured()) return;
   const { error } = await supabase.from('orders').update({ 

@@ -32,6 +32,15 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
     setSearchTerm(''); 
   };
 
+  const pendingCount = useMemo(() => {
+    return orders.filter(o => {
+      if (o.pickupDate !== selectedDate) return false;
+      if (o.status === 'Entregado') return false;
+      if (filterFactory !== 'ALL' && o.originBranch !== filterFactory) return false;
+      return !(o.location && o.location.trim() !== '');
+    }).length;
+  }, [orders, selectedDate, filterFactory]);
+
   const filteredOrders = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     
@@ -60,13 +69,15 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
     if (!order) return;
 
     const rawLoc = locationInputs[id] ?? order.location ?? '';
-    const rawPkg = packageInputs[id] ?? (order.packageCount?.toString() || '0');
+    const rawPkg = packageInputs[id] ?? (order.packageCount ? order.packageCount.toString() : '');
+    const parsedPkg = parseInt(rawPkg, 10);
+    const packageCount = Number.isFinite(parsedPkg) && parsedPkg > 0 ? parsedPkg : 1;
 
     if (rawLoc && rawLoc.trim() !== '') {
       setLoadingId(id);
       try {
         const allowOverwrite = mode === 'edit';
-        await updateOrderLocation(id, rawLoc.toUpperCase(), parseInt(rawPkg) || 0, allowOverwrite);
+        await updateOrderLocation(id, rawLoc.toUpperCase(), packageCount, allowOverwrite);
         
         const newLocInputs = { ...locationInputs };
         delete newLocInputs[id];
@@ -138,6 +149,8 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
                     <input
                         id={`pkg-${order.id}`}
                         type="number"
+                        min="1"
+                        placeholder="1"
                         className="border-2 border-slate-200 rounded-lg p-2 w-full text-center font-bold text-xl outline-none focus:border-orange-500 transition-colors"
                         value={currentValuePkg}
                         onChange={(e) => setPackageInputs({...packageInputs, [order.id]: e.target.value})}
@@ -161,9 +174,14 @@ export const LocateTab: React.FC<LocateTabProps> = ({ orders, refreshData, selec
   return (
     <div className="max-w-3xl mx-auto p-4 pb-24">
       <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-              {mode === 'locate' ? <><Package className="text-orange-600" /> Ubicar Pendientes</> : <><Edit3 className="text-blue-600" /> Corregir Ubicación</>}
-          </h2>
+          <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                  {mode === 'locate' ? <><Package className="text-orange-600" /> Ubicar Pendientes</> : <><Edit3 className="text-blue-600" /> Corregir Ubicación</>}
+              </h2>
+              <span className="bg-orange-100 text-orange-700 border border-orange-200 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase">
+                  Faltan: {pendingCount}
+              </span>
+          </div>
           <div className="flex gap-2">
             <button 
                 onClick={handleManualRefresh} 

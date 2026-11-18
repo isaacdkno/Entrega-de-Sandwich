@@ -9,9 +9,12 @@ interface LoadTabProps {
   session: UserSession;
   onSessionUpdate: (session: UserSession) => void;
   refreshData: () => void;
+  selectedDate: string;
 }
 
-export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refreshData }) => {
+const QUICK_TIMES = ['12:00', '13:00', '14:00', '20:00', '21:00', '22:00'];
+
+export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refreshData, selectedDate }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -22,7 +25,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const [depositInput, setDepositInput] = useState('0');
 
   const [formData, setFormData] = useState<Partial<Order>>({
-    pickupDate: PICKUP_DATES[0],
+    pickupDate: selectedDate || PICKUP_DATES[0],
     pickupTime: '',
     qtyTriples: 0,
     qtySimples: 0,
@@ -36,6 +39,12 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     id: ''
   });
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData(prev => ({ ...prev, pickupDate: selectedDate }));
+    }
+  }, [selectedDate, isEditing]);
 
   useEffect(() => {
     if (message) {
@@ -75,7 +84,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setIsEditing(false);
     setOriginalId(null);
     setFormData({
-        pickupDate: PICKUP_DATES[0], pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
+        pickupDate: selectedDate || PICKUP_DATES[0], pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
         paymentStatus: PaymentStatus.UNPAID, pickupBranch: PickupBranch.CENTRAL, id: '', customerName: '',
         address: '', phone: '', notes: ''
     });
@@ -103,6 +112,11 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     e.preventDefault();
     if (!formData.id || !formData.customerName || !formData.pickupTime) {
       setMessage({ type: 'error', text: 'Campos incompletos (ID, Nombre, Hora).' });
+      return;
+    }
+    const totalSandwiches = (Number(formData.qtyTriples) || 0) + (Number(formData.qtySimples) || 0);
+    if (totalSandwiches <= 0) {
+      setMessage({ type: 'error', text: 'Debe cargar al menos 1 sándwich (Triple o Simple).' });
       return;
     }
     setIsSaving(true);
@@ -222,6 +236,19 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
               <div className="relative">
                 <input type="time" required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:bg-white focus:border-orange-500 transition-all shadow-sm" value={formData.pickupTime || ''} onChange={e => setFormData({...formData, pickupTime: e.target.value})} disabled={isSaving} />
                 <Clock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              </div>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {QUICK_TIMES.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, pickupTime: t })}
+                    disabled={isSaving}
+                    className={`px-2 py-0.5 rounded-lg text-[9px] font-black transition-all border ${formData.pickupTime === t ? 'bg-orange-600 text-white border-orange-600' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-orange-50 hover:text-orange-600'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

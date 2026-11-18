@@ -15,6 +15,7 @@ export enum ProductionBranch {
 export enum OrderStatus {
   PENDING_PRODUCTION = 'Pendiente Elaboración', // Loaded but no location
   READY_FOR_PICKUP = 'Listo para Retirar', // Has location
+  IN_SEARCH = 'En Búsqueda', // Ticket printed, runner fetching order
   DELIVERED = 'Entregado', // Delivered to customer
 }
 

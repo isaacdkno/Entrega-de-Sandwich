@@ -54,8 +54,10 @@ export const generateTicketPDF = (order: Order) => {
       y += splitAddress.length * 5;
   }
 
-  // Sucursal Retiro
+  // Sucursal Retiro y Fábrica
   doc.text(`Retira: ${order.pickupBranch}`, margin, y);
+  y += 5;
+  doc.text(`Fabrica: ${order.originBranch}`, margin, y);
   y += 5;
 
   doc.line(margin, y, margin + width, y);
@@ -76,9 +78,9 @@ export const generateTicketPDF = (order: Order) => {
 
   // --- ESTADO DE PAGO ---
   doc.setFontSize(12);
-  let paymentText = "FALTA ABONAR";
-  if (order.paymentStatus === PaymentStatus.PAID) paymentText = "PAGADO";
-  if (order.paymentStatus === PaymentStatus.PARTIAL) paymentText = "CON SEÑA";
+  let paymentText = "*** FALTA ABONAR ***";
+  if (order.paymentStatus === PaymentStatus.PAID) paymentText = "PAGADO TOTAL";
+  if (order.paymentStatus === PaymentStatus.PARTIAL) paymentText = "*** CON SEÑA ***";
   
   doc.text(`ESTADO: ${paymentText}`, margin, y);
   y += 6;
@@ -119,7 +121,8 @@ export const generateTicketPDF = (order: Order) => {
   y += 4;
   doc.text(new Date().toLocaleString(), 40, y, { align: "center" });
 
-  // Abrir PDF en nueva pestaña (móvil compatible)
+  // Abrir PDF en nueva pestaña con autoPrint (móvil compatible)
+  doc.autoPrint();
   const pdfUrl = doc.output("bloburl");
   window.open(pdfUrl, "_blank");
 };

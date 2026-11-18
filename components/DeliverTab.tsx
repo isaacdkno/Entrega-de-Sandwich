@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, PaymentStatus, ProductionBranch } from '../types';
-import { markOrderDelivered } from '../services/storageService';
+import { markOrderDelivered, markOrderInSearch } from '../services/storageService';
 import { generateTicketPDF } from '../services/pdfService';
-import { PRODUCTION_BRANCHES } from '../constants';
+import { PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { Search, Printer, Filter, Loader2, PackageCheck, MapPin, Package, Factory, RefreshCw, Phone, SearchCode, Clock } from 'lucide-react';
 
 interface DeliverTabProps {
@@ -56,8 +56,16 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
     });
   }, [orders, searchTerm, filterBranch, filterFactory, selectedDate]);
 
-  const handlePrint = (order: Order) => {
+  const handlePrint = async (order: Order) => {
     generateTicketPDF(order);
+    if (order.location && order.status === OrderStatus.READY_FOR_PICKUP) {
+      try {
+        await markOrderInSearch(order.id);
+        refreshData();
+      } catch (e) {
+        console.error('Error marking order in search:', e);
+      }
+    }
   };
 
   const executeDeliver = async (id: string) => {
@@ -75,6 +83,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
 
   const getStatusHeader = (order: Order) => {
       if (order.status === OrderStatus.DELIVERED) return { color: 'bg-teal-700', text: 'ENTREGADO' };
+      if (order.status === OrderStatus.IN_SEARCH) return { color: 'bg-amber-600', text: `EN BÚSQUEDA (TICKET IMPRESO) • ${order.location || ''}` };
       if (order.location) return { color: 'bg-green-600', text: `UBICACIÓN: ${order.location}` };
       return { color: 'bg-red-500', text: 'SIN UBICACIÓN' };
   };
@@ -106,7 +115,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
          </div>
          
          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-           <div className="sm:col-span-3 relative">
+           <div className="sm:col-span-2 relative">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text"
@@ -126,6 +135,18 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
               >
                 <option value="ALL">Fábrica: Todas</option>
                 {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+           </div>
+
+           <div className="relative">
+              <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 pointer-events-none z-10" size={16} />
+              <select
+                className="w-full pl-12 p-3 rounded-xl text-slate-900 outline-none font-bold text-sm appearance-none bg-white cursor-pointer shadow-sm"
+                value={filterBranch}
+                onChange={e => setFilterBranch(e.target.value)}
+              >
+                <option value="">Retiro: Todos</option>
+                {PICKUP_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
            </div>
          </div>
