@@ -194,8 +194,8 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
       )}
 
       {/* Main Form Container - Optimizado para PC sin Scroll */}
-      <div className={`bg-white rounded-[2.5rem] px-8 py-6 shadow-2xl border transition-all flex-1 flex flex-col justify-center ${isEditing ? 'ring-4 ring-blue-100 border-blue-300' : 'border-slate-100'}`}>
-        <div className="flex items-center gap-3 mb-4">
+      <div className={`bg-white rounded-[2.5rem] px-4 sm:px-8 py-6 shadow-2xl border transition-all flex-1 flex flex-col justify-center ${isEditing ? 'ring-4 ring-blue-100 border-blue-300' : 'border-slate-100'}`}>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className={`p-2.5 rounded-full ${isEditing ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
                 {isEditing ? <Edit3 size={18} /> : <PlusCircle size={18} />}
             </div>

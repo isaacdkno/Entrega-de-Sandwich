@@ -28,7 +28,7 @@ export const Tabs: React.FC<TabsProps> = ({ activeTab, setActiveTab, userRole, u
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] sm:relative sm:bottom-auto sm:border-t-0 sm:border-b sm:shadow-none sm:sticky sm:top-0">
-      <div className="flex justify-around items-stretch max-w-4xl mx-auto h-16 sm:h-auto pb-safe">
+      <div className="flex justify-around items-stretch max-w-4xl mx-auto h-16 sm:h-auto bottom-nav-safe sm:pb-0">
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
