@@ -161,7 +161,7 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
                 </div>
                 {error && <p className="text-rose-600 text-[10px] font-bold uppercase">{error}</p>}
                 <p className="text-[10px] text-slate-400 font-bold">
-                  Importante: Para que un usuario nuevo pueda iniciar sesión, también debe tener su cuenta con contraseña creada en Supabase → Authentication → Users.
+                  Los empleados pueden crear su cuenta desde la pantalla de ingreso. Aparecerán abajo como <span className="text-amber-600">Pendiente</span> para que edites su rol y los autorices.
                 </p>
             </form>
         </div>
@@ -179,10 +179,11 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
          </div>
          
          <div className="divide-y divide-slate-100">
-            {users.map((user) => {
+            {[...users].sort((a, b) => (a.role === UserRole.PENDING ? -1 : b.role === UserRole.PENDING ? 1 : 0)).map((user) => {
                 const status = getUserStatus(user.lastActive);
+                const isPending = user.role === UserRole.PENDING;
                 return (
-                <div key={user.email} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition-colors gap-4">
+                <div key={user.email} className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition-colors gap-4 ${isPending ? 'bg-amber-50/40' : ''}`}>
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="relative">
                            <div className={`w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-400 border-2 ${status.online ? 'border-green-500' : 'border-slate-200'}`}>
@@ -203,8 +204,8 @@ export const UserManagementTab: React.FC<UserManagementTabProps> = ({ currentUse
 
                     <div className="flex items-center justify-between sm:justify-end gap-6">
                         <div className="text-right flex flex-col items-end">
-                            <span className="px-2 py-0.5 bg-slate-100 rounded-lg text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 mb-1">
-                                {user.role}
+                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border mb-1 ${isPending ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                {isPending ? 'Pendiente de Aprobación' : user.role}
                             </span>
                             <div className="flex items-center gap-1.5 text-slate-400">
                                 <Clock size={10} />

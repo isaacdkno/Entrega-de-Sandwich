@@ -88,6 +88,23 @@ export const saveAppUser = async (user: AppUser): Promise<void> => {
   if (error) throw new Error(error.message);
 };
 
+export const registerPendingUser = async (email: string, name: string): Promise<void> => {
+  if (!isSupabaseConfigured()) throw new Error("No hay conexión con la base de datos.");
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = (name || cleanEmail.split('@')[0]).trim().toUpperCase();
+
+  const { error } = await supabase.from('app_users').upsert({
+    email: cleanEmail,
+    name: cleanName,
+    role: UserRole.PENDING
+  }, {
+    onConflict: 'email',
+    ignoreDuplicates: true
+  });
+
+  if (error) throw new Error(error.message);
+};
+
 export const deleteAppUser = async (email: string): Promise<void> => {
   if (!isSupabaseConfigured()) throw new Error("No DB connection");
   const { error } = await supabase.from('app_users').delete().eq('email', email);

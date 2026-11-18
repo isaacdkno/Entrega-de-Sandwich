@@ -115,7 +115,7 @@ const App: React.FC = () => {
       }
 
       const role = await verifyUserRole(authEmail);
-      if (!role) {
+      if (!role || role === UserRole.PENDING) {
         await supabase.auth.signOut();
         clearSession();
         if (isMounted) setSession(null);

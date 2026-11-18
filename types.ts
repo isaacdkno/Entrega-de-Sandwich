@@ -31,7 +31,8 @@ export enum UserRole {
   UBICADOR = 'Ubicador',
   ENTREGADOR = 'Entregador',
   LOCATOR_DELIVERER = 'Entregador/Ubicador', // Nuevo Rol Híbrido
-  OPERATOR = 'Operador'
+  OPERATOR = 'Operador',
+  PENDING = 'Pendiente'
 }
 
 export interface AppUser {
