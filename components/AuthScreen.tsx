@@ -76,7 +76,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       });
 
       if (authError || !authData.user) {
-        setError('Correo o contraseña incorrectos.');
+        const detail = authError?.message ? ` (${authError.message})` : '';
+        setError(`No se pudo iniciar sesión${detail}.`);
         setIsLoggingIn(false);
         return;
       }
