@@ -88,23 +88,26 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
       "Origen", "Ubicacion", "Bultos", "Estado Operativo"
     ];
 
+    const escapeCsv = (val: string | number | null | undefined) =>
+      `"${String(val ?? '').replace(/"/g, '""')}"`;
+
     const rows = displayedOrders.map(o => [
-      o.id,
-      o.pickupDate,
-      o.pickupTime,
-      `"${o.customerName.replace(/"/g, '""')}"`,
-      `"${o.phone || ''}"`,
-      `"${(o.address || '').replace(/"/g, '""')}"`,
-      o.pickupBranch,
+      escapeCsv(o.id),
+      escapeCsv(o.pickupDate),
+      escapeCsv(o.pickupTime),
+      escapeCsv(o.customerName),
+      escapeCsv(o.phone),
+      escapeCsv(o.address),
+      escapeCsv(o.pickupBranch),
       o.qtyTriples,
       o.qtySimples,
       o.qtyTriples + o.qtySimples,
       o.deposit,
-      o.paymentStatus,
-      o.originBranch,
-      o.location || '',
+      escapeCsv(o.paymentStatus),
+      escapeCsv(o.originBranch),
+      escapeCsv(o.location),
       o.packageCount || 0,
-      o.status
+      escapeCsv(o.status)
     ]);
 
     const csvContent = [
@@ -121,6 +124,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleAiAnalysis = async () => {

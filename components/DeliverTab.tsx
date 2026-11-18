@@ -125,7 +125,7 @@ export const DeliverTab: React.FC<DeliverTabProps> = ({ orders, refreshData, sel
                 onChange={e => setFilterFactory(e.target.value)}
               >
                 <option value="ALL">Fábrica: Todas</option>
-                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.label}>{b.label}</option>)}
+                {PRODUCTION_BRANCHES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
            </div>
          </div>

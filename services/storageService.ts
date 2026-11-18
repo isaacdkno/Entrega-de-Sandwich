@@ -6,7 +6,13 @@ import { supabase, isSupabaseConfigured } from './client';
 // --- Session (Keeps using LocalStorage for simplicity) ---
 export const getSession = (): UserSession | null => {
   const stored = localStorage.getItem(STORAGE_KEY_SESSION);
-  return stored ? JSON.parse(stored) : null;
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    return null;
+  }
 };
 
 export const saveSession = (session: UserSession) => {
@@ -174,7 +180,7 @@ export const getOrders = async (dateFilter?: string): Promise<Order[]> => {
 
 export const searchOrders = async (term: string): Promise<Order[]> => {
   if (!isSupabaseConfigured()) return [];
-  const safeTerm = term.replace(/,/g, ' ').trim();
+  const safeTerm = term.replace(/[,()*\\]/g, ' ').trim();
   if (!safeTerm) return [];
   const { data, error } = await supabase.from('orders').select('*').or(`id.eq.${safeTerm},customer_name.ilike.%${safeTerm}%,phone.ilike.%${safeTerm}%,address.ilike.%${safeTerm}%`).limit(15);
   if (error) return [];

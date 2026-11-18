@@ -42,7 +42,7 @@ export interface AppUser {
 
 export interface Order {
   id: string; // Comanda number (manual)
-  pickupDate: '24/12/2025' | '31/12/2025';
+  pickupDate: string;
   pickupTime: string; // HH:MM
   customerName: string;
   address: string;

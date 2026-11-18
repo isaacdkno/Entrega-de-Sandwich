@@ -22,7 +22,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
   const [depositInput, setDepositInput] = useState('0');
 
   const [formData, setFormData] = useState<Partial<Order>>({
-    pickupDate: '31/12/2025',
+    pickupDate: PICKUP_DATES[0],
     pickupTime: '',
     qtyTriples: 0,
     qtySimples: 0,
@@ -75,7 +75,7 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
     setIsEditing(false);
     setOriginalId(null);
     setFormData({
-        pickupDate: '31/12/2025', pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
+        pickupDate: PICKUP_DATES[0], pickupTime: '', qtyTriples: 0, qtySimples: 0, deposit: 0,
         paymentStatus: PaymentStatus.UNPAID, pickupBranch: PickupBranch.CENTRAL, id: '', customerName: '',
         address: '', phone: '', notes: ''
     });
@@ -113,9 +113,9 @@ export const LoadTab: React.FC<LoadTabProps> = ({ session, onSessionUpdate, refr
         qtyTriples: Number(formData.qtyTriples),
         qtySimples: Number(formData.qtySimples),
         deposit: parseFloat(depositInput) || 0,
-        originBranch: session.currentProductionBranch,
+        originBranch: isEditing && formData.originBranch ? formData.originBranch : session.currentProductionBranch,
         status: formData.status || OrderStatus.PENDING_PRODUCTION,
-        createdBy: session.email,
+        createdBy: isEditing && formData.createdBy ? formData.createdBy : session.email,
       } as Order;
 
       await saveOrder(newOrder, isEditing, originalId || undefined);

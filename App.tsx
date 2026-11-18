@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserSession, Order, UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { Tabs } from './components/Tabs';
@@ -42,7 +42,6 @@ const App: React.FC = () => {
 
   const handleDateChange = (newDate: string) => {
     setGlobalDate(newDate);
-    refreshOrders(newDate);
   };
 
   const canAccessTab = (role: UserRole, tabId: string, email: string) => {
@@ -86,6 +85,15 @@ const App: React.FC = () => {
     }
   }, [session?.email]);
 
+  const refreshOrdersRef = useRef(refreshOrders);
+  useEffect(() => {
+    refreshOrdersRef.current = refreshOrders;
+  }, [refreshOrders]);
+
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
+
   useEffect(() => {
     const storedSession = getSession();
     if (storedSession) {
@@ -95,15 +103,14 @@ const App: React.FC = () => {
           setActiveTab(getDefaultTabForRole(storedSession.role));
       }
     }
-    refreshOrders();
     if (isSupabaseConfigured()) {
       const channel = supabase
         .channel('public:orders')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => refreshOrders())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => refreshOrdersRef.current())
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     }
-  }, [refreshOrders]);
+  }, []);
 
   if (configError) {
     return (
@@ -115,7 +122,16 @@ const App: React.FC = () => {
     );
   }
 
-  if (!session) return <AuthScreen onLogin={setSession} />;
+  if (!session) {
+    return (
+      <AuthScreen
+        onLogin={(newSession) => {
+          setSession(newSession);
+          setActiveTab(getDefaultTabForRole(newSession.role));
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
