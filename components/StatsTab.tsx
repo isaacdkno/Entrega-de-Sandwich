@@ -2,9 +2,8 @@
 import React, { useMemo, useState } from 'react';
 import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
 import { PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
-import { analyzeOrders } from '../services/geminiService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
-import { BrainCircuit, Loader2, RefreshCw, DollarSign, BarChart3, TrendingUp, Package, MessageSquareQuote, FileDown, CheckCircle2, Filter, Store, Sigma, Ticket } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, BarChart3, TrendingUp, FileDown, Filter, Store, Sigma, Ticket, Factory, Clock, AlertTriangle, Layers, CheckCircle2 } from 'lucide-react';
 
 interface StatsTabProps {
   orders: Order[];
@@ -14,18 +13,15 @@ interface StatsTabProps {
 export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
   const [selectedFactory, setSelectedFactory] = useState<string>('ALL');
   const [chartMode, setChartMode] = useState<'UNIDADES' | 'COMANDAS'>('UNIDADES');
-  
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
-  const [customAiPrompt, setCustomAiPrompt] = useState('');
+
+  const ordersForDate = useMemo(() => {
+    return orders.filter(o => o.pickupDate === selectedDate);
+  }, [orders, selectedDate]);
 
   const displayedOrders = useMemo(() => {
-    let filtered = orders.filter(o => o.pickupDate === selectedDate);
-    if (selectedFactory !== 'ALL') {
-      filtered = filtered.filter(o => o.originBranch === selectedFactory);
-    }
-    return filtered;
-  }, [orders, selectedDate, selectedFactory]);
+    if (selectedFactory === 'ALL') return ordersForDate;
+    return ordersForDate.filter(o => o.originBranch === selectedFactory);
+  }, [ordersForDate, selectedFactory]);
 
   const stats = useMemo(() => {
     const branchData: Record<string, { total: number; prod: number; deliv: number; count: number }> = {};
@@ -34,7 +30,16 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
     });
 
     let gTotal = 0;
+    let totalTriples = 0;
+    let totalSimples = 0;
     let fPaid = 0, fPartial = 0, fUnpaid = 0;
+
+    const pipeline = {
+      pending: { count: 0, units: 0 },
+      ready: { count: 0, units: 0 },
+      inSearch: { count: 0, units: 0 },
+      delivered: { count: 0, units: 0 },
+    };
 
     displayedOrders.forEach(o => {
         const branchLabel = PICKUP_BRANCHES.find(b => b.value === o.pickupBranch)?.label || o.pickupBranch;
@@ -45,6 +50,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
         branchData[branchLabel].total += units;
         branchData[branchLabel].count += 1;
         gTotal += units;
+        totalTriples += o.qtyTriples;
+        totalSimples += o.qtySimples;
 
         if (o.location) branchData[branchLabel].prod += units;
         if (o.status === OrderStatus.DELIVERED) branchData[branchLabel].deliv += units;
@@ -52,6 +59,20 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
         if (o.paymentStatus === PaymentStatus.PAID) fPaid++;
         else if (o.paymentStatus === PaymentStatus.PARTIAL) fPartial++;
         else fUnpaid++;
+
+        if (o.status === OrderStatus.DELIVERED) {
+          pipeline.delivered.count += 1;
+          pipeline.delivered.units += units;
+        } else if (o.status === OrderStatus.IN_SEARCH) {
+          pipeline.inSearch.count += 1;
+          pipeline.inSearch.units += units;
+        } else if (o.status === OrderStatus.READY_FOR_PICKUP || o.location) {
+          pipeline.ready.count += 1;
+          pipeline.ready.units += units;
+        } else {
+          pipeline.pending.count += 1;
+          pipeline.pending.units += units;
+        }
     });
 
     return { 
@@ -63,9 +84,70 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
             delivP: d.total > 0 ? Math.round((d.deliv / d.total) * 100) : 0
         })).sort((a, b) => b.total - a.total),
         gTotal,
-        finances: { paid: fPaid, partial: fPartial, unpaid: fUnpaid }
+        totalTriples,
+        totalSimples,
+        totalComandas: displayedOrders.length,
+        finances: { paid: fPaid, partial: fPartial, unpaid: fUnpaid },
+        pipeline
     };
   }, [displayedOrders]);
+
+  const factoryComparison = useMemo(() => {
+    return PRODUCTION_BRANCHES.map(fb => {
+      const fOrders = ordersForDate.filter(o => o.originBranch === fb.value);
+      const totalUnits = fOrders.reduce((acc, o) => acc + o.qtyTriples + o.qtySimples, 0);
+      const triples = fOrders.reduce((acc, o) => acc + o.qtyTriples, 0);
+      const simples = fOrders.reduce((acc, o) => acc + o.qtySimples, 0);
+      const prodUnits = fOrders.filter(o => o.location).reduce((acc, o) => acc + o.qtyTriples + o.qtySimples, 0);
+      const delivUnits = fOrders.filter(o => o.status === OrderStatus.DELIVERED).reduce((acc, o) => acc + o.qtyTriples + o.qtySimples, 0);
+
+      return {
+        value: fb.value,
+        label: fb.label,
+        count: fOrders.length,
+        totalUnits,
+        triples,
+        simples,
+        prodP: totalUnits > 0 ? Math.round((prodUnits / totalUnits) * 100) : 0,
+        delivP: totalUnits > 0 ? Math.round((delivUnits / totalUnits) * 100) : 0,
+      };
+    });
+  }, [ordersForDate]);
+
+  const overdueAnalysis = useMemo(() => {
+    const [d, m, y] = selectedDate.split('/').map(Number);
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const selectedMidnight = new Date(y, m - 1, d).getTime();
+
+    const dateRelation: 'past' | 'today' | 'future' =
+      selectedMidnight < todayMidnight ? 'past' : selectedMidnight > todayMidnight ? 'future' : 'today';
+
+    const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const overdueOrders = displayedOrders
+      .filter(o => {
+        if (o.status === OrderStatus.DELIVERED) return false;
+        if (dateRelation === 'future') return false;
+        if (dateRelation === 'past') return true;
+        return Boolean(o.pickupTime && /^\d{2}:\d{2}$/.test(o.pickupTime) && o.pickupTime < currentHHMM);
+      })
+      .sort((a, b) => (a.pickupTime || '').localeCompare(b.pickupTime || ''));
+
+    return {
+      dateRelation,
+      overdueOrders,
+      unlocatedOverdue: overdueOrders.filter(o => !o.location).length,
+    };
+  }, [displayedOrders, selectedDate]);
+
+  const pieData = useMemo(() => {
+    if (stats.gTotal === 0) return [];
+    return [
+      { name: 'Triples', value: stats.totalTriples, color: '#2563eb' },
+      { name: 'Simples', value: stats.totalSimples, color: '#fb923c' },
+    ];
+  }, [stats.gTotal, stats.totalTriples, stats.totalSimples]);
 
   const hourlyChartData = useMemo(() => {
     const hourMap: Record<string, { hour: string; Triples: number; Simples: number; Comandas: number }> = {};
@@ -127,21 +209,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
     URL.revokeObjectURL(url);
   };
 
-  const handleAiAnalysis = async () => {
-    if (displayedOrders.length === 0) return;
-    setIsLoadingAi(true);
-    setAiAnalysis(null);
-    try {
-      const result = await analyzeOrders(displayedOrders, selectedDate, selectedFactory, customAiPrompt);
-      setAiAnalysis(result);
-      setCustomAiPrompt('');
-    } catch (err: any) {
-      setAiAnalysis("Error al conectar con la IA.");
-    } finally {
-      setIsLoadingAi(false);
-    }
-  };
-
   return (
     <div className="max-w-[1400px] mx-auto p-2 sm:p-4 pb-24 space-y-6">
       {/* Header Panel */}
@@ -191,99 +258,249 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
          </div>
       </div>
 
-      {/* Seccion Gráfico y Panel IA (Fila Media) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <div className="lg:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative">
-            <div className="flex justify-between items-center mb-8">
-                <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest">
-                   <TrendingUp size={16} className="text-blue-600" /> Distribución Horaria
-                </h3>
-                <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
-                   <button onClick={() => setChartMode('UNIDADES')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${chartMode === 'UNIDADES' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Unidades</button>
-                   <button onClick={() => setChartMode('COMANDAS')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${chartMode === 'COMANDAS' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>Comandas</button>
-                </div>
-            </div>
-            
-            <div className="h-[320px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '800'}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                  <Tooltip 
-                    contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold'}}
-                  />
-                  {chartMode === 'UNIDADES' ? (
-                    <>
-                      <Bar name="Simples" dataKey="Simples" fill="#fb923c" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Simples" position="top" style={{ fill: '#fb923c', fontSize: '9px', fontWeight: 'bold' }} />
-                      </Bar>
-                      <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
-                        <LabelList dataKey="Triples" position="top" style={{ fill: '#2563eb', fontSize: '9px', fontWeight: 'bold' }} />
-                      </Bar>
-                    </>
-                  ) : (
-                    <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={40}>
-                      <LabelList dataKey="Comandas" position="top" style={{ fill: '#0f172a', fontSize: '10px', fontWeight: 'bold' }} />
-                    </Bar>
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-         </div>
-
-         {/* Panel IA Gemini */}
-         <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-full border border-slate-800">
-            <div className="p-5 bg-slate-800/50 border-b border-white/5 flex items-center gap-3">
-              <div className="bg-orange-600 p-2.5 rounded-2xl shadow-lg shadow-orange-900/50"><BrainCircuit className="text-white" size={24} /></div>
+      {/* Alerta de Horarios Atrasados */}
+      {overdueAnalysis.overdueOrders.length > 0 ? (
+        <div className="bg-rose-50 border border-rose-200 rounded-[2rem] p-5 shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="bg-rose-600 text-white p-2.5 rounded-2xl shadow-sm">
+                <AlertTriangle size={20} />
+              </div>
               <div>
-                <h4 className="text-white font-black uppercase text-[11px] tracking-[0.2em] leading-none mb-1">Asistente Gemini</h4>
-                <p className="text-[9px] text-orange-400 font-black uppercase tracking-widest opacity-80">IA Inteligente</p>
+                <h3 className="text-xs font-black text-rose-900 uppercase tracking-widest">
+                  Pedidos con Horario Atrasado ({overdueAnalysis.overdueOrders.length})
+                </h3>
+                <p className="text-[10px] font-bold text-rose-700">
+                  {overdueAnalysis.unlocatedOverdue > 0
+                    ? `${overdueAnalysis.unlocatedOverdue} sin ubicar todavía — revisar producción urgente.`
+                    : 'Todos ya están ubicados, pendientes de entrega.'}
+                </p>
               </div>
             </div>
+            <span className="bg-white text-rose-700 border border-rose-200 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+              <Clock size={12} className="inline mr-1" />
+              {overdueAnalysis.dateRelation === 'past' ? 'Fecha pasada' : 'Hora vencida'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {overdueAnalysis.overdueOrders.slice(0, 8).map(o => (
+              <div key={o.id} className="bg-white border border-rose-200 rounded-xl px-3 py-1.5 text-[10px] font-bold text-slate-700 flex items-center gap-2">
+                <span className="font-black text-rose-600">#{o.id}</span>
+                <span>{o.pickupTime || '--:--'}</span>
+                <span className="text-slate-400">•</span>
+                <span className="truncate max-w-[140px]">{o.customerName}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${o.location ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-700'}`}>
+                  {o.location || 'Sin ubicar'}
+                </span>
+              </div>
+            ))}
+            {overdueAnalysis.overdueOrders.length > 8 && (
+              <span className="text-[10px] font-black text-rose-700 self-center px-2">
+                +{overdueAnalysis.overdueOrders.length - 8} más
+              </span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl px-4 py-2.5 flex items-center justify-between text-emerald-800">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider">
+            <CheckCircle2 size={15} className="text-emerald-600" />
+            {overdueAnalysis.dateRelation === 'future'
+              ? 'Control de atrasos activo (fecha futura — sin atrasos)'
+              : 'Sin pedidos atrasados para el horario actual'}
+          </div>
+          <span className="text-[10px] font-bold text-emerald-600">{stats.totalComandas} comandas</span>
+        </div>
+      )}
 
-            <div className="p-5 flex-1 flex flex-col gap-4">
-               <div className="flex-1 overflow-y-auto p-5 bg-slate-900/60 rounded-3xl border border-white/5 text-slate-300 text-xs leading-relaxed font-bold custom-scrollbar">
-                  {isLoadingAi ? (
-                    <div className="flex flex-col items-center justify-center h-full gap-4">
-                        <Loader2 className="animate-spin text-orange-500" size={32} />
-                        <div className="bg-emerald-500/10 text-emerald-500 px-4 py-1.5 rounded-full text-[9px] font-black uppercase flex items-center gap-2">
-                            <CheckCircle2 size={12} /> LISTO
-                        </div>
-                        <span className="text-[10px] font-black text-slate-600 uppercase italic">Analizando pedidos...</span>
-                    </div>
-                  ) : aiAnalysis ? (
-                    <div className="animate-fade-in whitespace-pre-wrap">{aiAnalysis}</div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-700 gap-4 text-center">
-                        <div className="bg-emerald-500/10 text-emerald-500 px-4 py-1.5 rounded-full text-[9px] font-black uppercase flex items-center gap-2">
-                            <CheckCircle2 size={12} /> LISTO
-                        </div>
-                        <MessageSquareQuote size={48} className="opacity-20" />
-                        <p className="text-[10px] font-black uppercase tracking-widest leading-loose">¿Querés un balance del día?</p>
-                    </div>
-                  )}
+      {/* Seccion Gráfico Horario + Composición Triples/Simples */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative">
+           <div className="flex justify-between items-center mb-8">
+               <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest">
+                  <TrendingUp size={16} className="text-blue-600" /> Distribución Horaria
+               </h3>
+               <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+                  <button onClick={() => setChartMode('UNIDADES')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${chartMode === 'UNIDADES' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400'}`}>Unidades</button>
+                  <button onClick={() => setChartMode('COMANDAS')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${chartMode === 'COMANDAS' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>Comandas</button>
                </div>
+           </div>
+           
+           <div className="h-[320px] w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={hourlyChartData}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                 <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '800'}} />
+                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                 <Tooltip 
+                   contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold'}}
+                 />
+                 {chartMode === 'UNIDADES' ? (
+                   <>
+                     <Bar name="Simples" dataKey="Simples" fill="#fb923c" radius={[4, 4, 0, 0]} barSize={20}>
+                       <LabelList dataKey="Simples" position="top" style={{ fill: '#fb923c', fontSize: '9px', fontWeight: 'bold' }} />
+                     </Bar>
+                     <Bar name="Triples" dataKey="Triples" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20}>
+                       <LabelList dataKey="Triples" position="top" style={{ fill: '#2563eb', fontSize: '9px', fontWeight: 'bold' }} />
+                     </Bar>
+                   </>
+                 ) : (
+                   <Bar name="Comandas" dataKey="Comandas" fill="#0f172a" radius={[6, 6, 0, 0]} barSize={40}>
+                     <LabelList dataKey="Comandas" position="top" style={{ fill: '#0f172a', fontSize: '10px', fontWeight: 'bold' }} />
+                   </Bar>
+                 )}
+               </BarChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
 
-               <div className="space-y-3">
-                   <input 
-                      type="text"
-                      className="w-full bg-slate-800/50 border border-white/10 rounded-2xl p-4 text-white text-xs focus:border-orange-500 outline-none transition-all placeholder:text-slate-600 font-bold"
-                      placeholder="Escribí una consulta a la IA..."
-                      value={customAiPrompt}
-                      onChange={e => setCustomAiPrompt(e.target.value)}
-                   />
-                   <button 
-                      onClick={handleAiAnalysis}
-                      disabled={isLoadingAi || displayedOrders.length === 0}
-                      className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-orange-50 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95"
-                   >
-                      <RefreshCw size={16} className={isLoadingAi ? 'animate-spin' : ''} />
-                      {isLoadingAi ? 'Procesando...' : 'Generar Análisis'}
-                   </button>
-               </div>
+        {/* Triples vs Simples */}
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest mb-2">
+              <Layers size={16} className="text-orange-600" /> Triples vs. Simples
+            </h3>
+            <p className="text-[10px] font-bold text-slate-400">Total de unidades a producir</p>
+          </div>
+
+          <div className="h-[210px] w-full flex items-center justify-center">
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={82}
+                    paddingAngle={4}
+                  >
+                    {pieData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{borderRadius: '14px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold'}} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-xs font-bold text-slate-300 uppercase">Sin datos</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-100">
+              <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Triples</p>
+              <p className="text-2xl font-black text-slate-800">{stats.totalTriples}</p>
+              <p className="text-[10px] font-bold text-blue-600">
+                {stats.gTotal > 0 ? Math.round((stats.totalTriples / stats.gTotal) * 100) : 0}%
+              </p>
             </div>
-         </div>
+            <div className="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-100">
+              <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Simples</p>
+              <p className="text-2xl font-black text-slate-800">{stats.totalSimples}</p>
+              <p className="text-[10px] font-bold text-orange-600">
+                {stats.gTotal > 0 ? Math.round((stats.totalSimples / stats.gTotal) * 100) : 0}%
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estado Operativo + Comparativa por Fábrica */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Estado Operativo */}
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest">
+              <Ticket size={16} className="text-blue-600" /> Estado Operativo
+            </h3>
+            <span className="text-[10px] font-black text-slate-400 uppercase">{stats.totalComandas} comandas</span>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { label: 'Sin Ubicar (Pendiente)', data: stats.pipeline.pending, bar: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700' },
+              { label: 'Listos para Retirar', data: stats.pipeline.ready, bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700' },
+              { label: 'En Búsqueda', data: stats.pipeline.inSearch, bar: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700' },
+              { label: 'Entregados', data: stats.pipeline.delivered, bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700' },
+            ].map(stage => {
+              const pct = stats.totalComandas > 0 ? Math.round((stage.data.count / stats.totalComandas) * 100) : 0;
+              return (
+                <div key={stage.label} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-700">{stage.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-400">{stage.data.units} unid</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${stage.badge}`}>
+                        {stage.data.count} ({pct}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${stage.bar} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Comparativa por Fábrica */}
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest">
+              <Factory size={16} className="text-orange-600" /> Comparativa por Fábrica
+            </h3>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Día completo</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {factoryComparison.map(fc => {
+              const isSelected = selectedFactory === fc.value;
+              return (
+                <div
+                  key={fc.value}
+                  onClick={() => setSelectedFactory(isSelected ? 'ALL' : fc.value)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+                    isSelected ? 'border-orange-500 bg-orange-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60 hover:border-orange-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{fc.label}</p>
+                      <p className="text-2xl font-black text-slate-800">{fc.totalUnits} <span className="text-[10px] text-slate-400 uppercase">unid</span></p>
+                    </div>
+                    <span className="bg-white px-2 py-0.5 rounded-lg text-[9px] font-black text-slate-500 border border-slate-100">
+                      {fc.count} com.
+                    </span>
+                  </div>
+                  <div className="flex gap-3 text-[10px] font-bold text-slate-500">
+                    <span>Triples: <strong className="text-blue-600">{fc.triples}</strong></span>
+                    <span>Simples: <strong className="text-orange-600">{fc.simples}</strong></span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[9px] font-black uppercase">
+                      <span className="text-slate-400">Ubicado</span>
+                      <span className="text-blue-600">{fc.prodP}%</span>
+                    </div>
+                    <div className="h-1.5 bg-white rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600" style={{ width: `${fc.prodP}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[9px] font-black uppercase">
+                      <span className="text-slate-400">Entregado</span>
+                      <span className="text-emerald-600">{fc.delivP}%</span>
+                    </div>
+                    <div className="h-1.5 bg-white rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${fc.delivP}%` }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Fila: Carga por Sucursal */}
