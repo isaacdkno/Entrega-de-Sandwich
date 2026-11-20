@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { Order, OrderStatus, ProductionBranch, PaymentStatus } from '../types';
+import { Order, OrderStatus, ProductionBranch, PickupBranch, PaymentStatus } from '../types';
 import { PRODUCTION_BRANCHES, PICKUP_BRANCHES } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, BarChart3, TrendingUp, FileDown, Filter, Store, Sigma, Ticket, Factory, Clock, AlertTriangle, Layers, CheckCircle2 } from 'lucide-react';
@@ -141,13 +141,66 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
     };
   }, [displayedOrders, selectedDate]);
 
-  const pieData = useMemo(() => {
-    if (stats.gTotal === 0) return [];
-    return [
-      { name: 'Triples', value: stats.totalTriples, color: '#2563eb' },
-      { name: 'Simples', value: stats.totalSimples, color: '#fb923c' },
-    ];
-  }, [stats.gTotal, stats.totalTriples, stats.totalSimples]);
+  const triplesBreakdown = useMemo(() => {
+    const total = stats.totalTriples;
+
+    const byFactory = PRODUCTION_BRANCHES.map((fb, idx) => {
+      const value = displayedOrders
+        .filter(o => o.originBranch === fb.value)
+        .reduce((acc, o) => acc + o.qtyTriples, 0);
+      return {
+        name: fb.label,
+        value,
+        pct: total > 0 ? Math.round((value / total) * 100) : 0,
+        color: idx === 0 ? '#2563eb' : '#f97316',
+      };
+    });
+
+    const branchColors: Record<string, string> = {
+      [PickupBranch.CENTRAL]: '#3b82f6',
+      [PickupBranch.BUENOS_AIRES]: '#10b981',
+      [PickupBranch.ACONQUIJA]: '#fb923c',
+      [PickupBranch.OPEN_PLAZA]: '#8b5cf6',
+      [PickupBranch.REPARTO]: '#f43f5e',
+    };
+    const fallbackColors = ['#06b6d4', '#eab308', '#64748b'];
+
+    const branchTotals: Record<string, { name: string; value: number; color: string }> = {};
+    PICKUP_BRANCHES.forEach((b, idx) => {
+      branchTotals[b.value] = {
+        name: b.label,
+        value: 0,
+        color: branchColors[b.value] || fallbackColors[idx % fallbackColors.length],
+      };
+    });
+
+    displayedOrders.forEach(o => {
+      if (o.qtyTriples <= 0) return;
+      if (!branchTotals[o.pickupBranch]) {
+        branchTotals[o.pickupBranch] = {
+          name: o.pickupBranch,
+          value: 0,
+          color: fallbackColors[Object.keys(branchTotals).length % fallbackColors.length],
+        };
+      }
+      branchTotals[o.pickupBranch].value += o.qtyTriples;
+    });
+
+    const byBranch = Object.values(branchTotals)
+      .map(b => ({
+        ...b,
+        pct: total > 0 ? Math.round((b.value / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    return {
+      total,
+      byFactory,
+      factoryPie: byFactory.filter(f => f.value > 0),
+      byBranch,
+      branchPie: byBranch.filter(b => b.value > 0),
+    };
+  }, [displayedOrders, stats.totalTriples]);
 
   const hourlyChartData = useMemo(() => {
     const hourMap: Record<string, { hour: string; Triples: number; Simples: number; Comandas: number }> = {};
@@ -354,55 +407,108 @@ export const StatsTab: React.FC<StatsTabProps> = ({ orders, selectedDate }) => {
            </div>
         </div>
 
-        {/* Triples vs Simples */}
-        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between">
-          <div>
-            <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest mb-2">
-              <Layers size={16} className="text-orange-600" /> Triples vs. Simples
-            </h3>
-            <p className="text-[10px] font-bold text-slate-400">Total de unidades a producir</p>
+        {/* Distribución de Triples por Fábrica y Sucursal */}
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between gap-4">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-[11px] tracking-widest mb-1">
+                <Layers size={16} className="text-blue-600" /> Triples por Fábrica y Sucursal
+              </h3>
+              <p className="text-[10px] font-bold text-slate-400">Centro: Fábrica • Exterior: Sucursal</p>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Total</span>
+              <span className="text-lg font-black text-blue-600 leading-none">{triplesBreakdown.total.toLocaleString('es-AR')}</span>
+            </div>
           </div>
 
-          <div className="h-[210px] w-full flex items-center justify-center">
-            {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={82}
-                    paddingAngle={4}
-                  >
-                    {pieData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{borderRadius: '14px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold'}} />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="h-[195px] w-full relative flex items-center justify-center">
+            {triplesBreakdown.total > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={triplesBreakdown.factoryPie}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={42}
+                      outerRadius={58}
+                      paddingAngle={3}
+                    >
+                      {triplesBreakdown.factoryPie.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Pie
+                      data={triplesBreakdown.branchPie}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={64}
+                      outerRadius={84}
+                      paddingAngle={3}
+                    >
+                      {triplesBreakdown.branchPie.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, name: string) => [
+                        `${value.toLocaleString('es-AR')} triples (${triplesBreakdown.total > 0 ? Math.round((value / triplesBreakdown.total) * 100) : 0}%)`,
+                        name,
+                      ]}
+                      contentStyle={{ borderRadius: '14px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold', fontSize: '12px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-black text-slate-800 leading-none">
+                    {triplesBreakdown.total.toLocaleString('es-AR')}
+                  </span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                    Triples
+                  </span>
+                </div>
+              </>
             ) : (
               <p className="text-xs font-bold text-slate-300 uppercase">Sin datos</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-100">
-              <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Triples</p>
-              <p className="text-2xl font-black text-slate-800">{stats.totalTriples}</p>
-              <p className="text-[10px] font-bold text-blue-600">
-                {stats.gTotal > 0 ? Math.round((stats.totalTriples / stats.gTotal) * 100) : 0}%
-              </p>
+          <div className="space-y-3">
+            {/* Por Fábrica */}
+            <div className="grid grid-cols-2 gap-2">
+              {triplesBreakdown.byFactory.map((f) => (
+                <div key={f.name} className="bg-slate-50/80 px-3 py-2 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: f.color }} />
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider truncate">{f.name}</p>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-1">
+                    <span className="text-base font-black text-slate-800">{f.value.toLocaleString('es-AR')}</span>
+                    <span className="text-[10px] font-black text-slate-500">{f.pct}%</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-100">
-              <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Simples</p>
-              <p className="text-2xl font-black text-slate-800">{stats.totalSimples}</p>
-              <p className="text-[10px] font-bold text-orange-600">
-                {stats.gTotal > 0 ? Math.round((stats.totalSimples / stats.gTotal) * 100) : 0}%
-              </p>
+
+            {/* Por Sucursal */}
+            <div className="space-y-1.5 pt-1 border-t border-slate-100">
+              {triplesBreakdown.byBranch.map((b) => (
+                <div key={b.name} className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: b.color }} />
+                    <span className="font-bold text-slate-600 truncate">{b.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-black text-slate-800">{b.value.toLocaleString('es-AR')}</span>
+                    <span className="text-[10px] font-bold text-slate-400 w-8 text-right">{b.pct}%</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
